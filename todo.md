@@ -132,3 +132,6 @@
 
 ## Bugs
 - [x] Coluna status não existe no banco real da tabela bingo_cards — tabela criada com SQL compatível com TiDB (sem DEFAULT em JSON)
+
+## Fase 7 - Limpeza de Menu
+- [x] Remover item "Assinatura" do menu lateral
