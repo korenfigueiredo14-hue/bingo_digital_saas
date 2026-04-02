@@ -19,6 +19,7 @@ import CardSelector from "./pages/CardSelector";
 import OperatorSelect from "./pages/OperatorSelect";
 import BuyCards from "./pages/BuyCards";
 import BingoShow from "./pages/BingoShow";
+import SellCards from "./pages/SellCards";
 
 function Router() {
   return (
@@ -38,7 +39,8 @@ function Router() {
       <Route path="/rooms/:id" component={RoomDetail} />
       <Route path="/operator" component={OperatorSelect} />
       <Route path="/operator/:id" component={BingoOperator} />
-      <Route path="/sell/:id" component={CardSelector} />
+      <Route path="/sell/:id" component={SellCards} />
+      <Route path="/sell-old/:id" component={CardSelector} />
       <Route path="/reports" component={Reports} />
       <Route path="/subscription" component={Subscription} />
 

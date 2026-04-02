@@ -127,6 +127,9 @@ export default function RoomDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" className="gap-1.5 bg-primary" onClick={() => navigate(`/sell/${roomId}`)} title="Vender cartelas na maquininha">
+              <TicketCheck className="w-3.5 h-3.5" /> Vender Cartelas
+            </Button>
             <Button size="sm" variant="outline" onClick={() => window.open(buyUrl, "_blank")} title="Página de compra pública">
               <ExternalLink className="w-3 h-3 mr-1" /> Compra Pública
             </Button>

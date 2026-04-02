@@ -106,3 +106,11 @@
 - [x] Contador de cartelas vendidas e prêmio em destaque
 - [x] Animação de ganhador (overlay de celebração)
 - [x] Links de compartilhamento no painel do operador
+
+## Fase 4 - Simplificação e Fluxo Maquininha
+- [x] Formulário de criação de bingo simplificado (só nome + quantidade de cartelas)
+- [x] Preço fixo de R$ 0,01 por cartela (hardcoded no sistema)
+- [x] Tela de venda na maquininha: selecionar quantidade, confirmar pagamento, imprimir
+- [x] Impressão automática das cartelas após confirmação de pagamento
+- [x] QR Code de cada cartela impresso junto para o jogador assistir ao vivo
+- [x] Layout de impressão otimizado para impressora térmica 80mm
