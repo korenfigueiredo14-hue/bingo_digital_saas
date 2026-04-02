@@ -17,6 +17,8 @@ import Subscription from "./pages/Subscription";
 import BingoOperator from "./pages/BingoOperator";
 import CardSelector from "./pages/CardSelector";
 import OperatorSelect from "./pages/OperatorSelect";
+import BuyCards from "./pages/BuyCards";
+import BingoShow from "./pages/BingoShow";
 
 function Router() {
   return (
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/play/:token" component={PlayerCard} />
       <Route path="/live/:slug" component={LiveBingo} />
       <Route path="/print/:token" component={PrintCard} />
+      <Route path="/buy/:slug" component={BuyCards} />
+      <Route path="/show/:slug" component={BingoShow} />
 
       {/* Painel do operador (requer login) */}
       <Route path="/dashboard" component={Dashboard} />

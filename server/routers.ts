@@ -522,6 +522,136 @@ const adminRouter = router({
     }),
 });
 
+// ─── Public Buy Router (compra pública sem autenticação) ────────────────────
+const publicBuyRouter = router({
+  // Busca dados da sala para exibir na página de compra
+  getRoomInfo: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const room = await getRoomBySlug(input.slug);
+      if (!room) throw new TRPCError({ code: "NOT_FOUND", message: "Bingo não encontrado" });
+      if (!['open', 'draft', 'running'].includes(room.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Este bingo não está aceitando novas cartelas" });
+      }
+      const soldCount = await countCardsByRoom(room.id);
+      return {
+        id: room.id,
+        name: room.name,
+        description: room.description,
+        cardPrice: room.cardPrice,
+        prize: room.prize,
+        prizeDescription: room.prizeDescription,
+        maxCards: room.maxCards,
+        soldCount,
+        availableCount: room.maxCards - soldCount,
+        status: room.status,
+        publicSlug: room.publicSlug,
+        drawIntervalSeconds: room.drawIntervalSeconds,
+        winCondition: room.winCondition,
+      };
+    }),
+
+  // Compra pública de cartelas (sem login)
+  buyCards: publicProcedure
+    .input(
+      z.object({
+        slug: z.string(),
+        playerName: z.string().min(2).max(100),
+        playerPhone: z.string().min(8).max(20),
+        quantity: z.number().min(1).max(20),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const room = await getRoomBySlug(input.slug);
+      if (!room) throw new TRPCError({ code: "NOT_FOUND", message: "Bingo não encontrado" });
+      if (!['open', 'draft'].includes(room.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Este bingo não está aceitando novas cartelas" });
+      }
+
+      const currentCount = await countCardsByRoom(room.id);
+      if (currentCount + input.quantity > room.maxCards) {
+        const available = room.maxCards - currentCount;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: available <= 0
+            ? "Todas as cartelas já foram vendidas"
+            : `Apenas ${available} cartela(s) disponível(is)`,
+        });
+      }
+
+      const generatedCards = [];
+      const baseUrl = process.env.VITE_APP_ID
+        ? `https://${process.env.VITE_APP_ID}.manus.space`
+        : "http://localhost:3000";
+
+      for (let i = 0; i < input.quantity; i++) {
+        const { grid, token } = generateCard();
+        const cardUrl = `${baseUrl}/play/${token}`;
+        const qrCodeDataUrl = await QRCode.toDataURL(cardUrl, {
+          errorCorrectionLevel: "M",
+          width: 200,
+        });
+
+        const cardId = await createCard({
+          roomId: room.id,
+          operatorId: room.operatorId,
+          token,
+          qrCodeData: cardUrl,
+          grid: grid as any,
+          playerName: input.playerName,
+          playerPhone: input.playerPhone,
+          pricePaid: room.cardPrice as any,
+          markedNumbers: [] as any,
+        });
+
+        await createTransaction({
+          operatorId: room.operatorId,
+          roomId: room.id,
+          cardId,
+          type: "card_sale",
+          amount: room.cardPrice as any,
+          status: "approved",
+          paymentMethod: "public_link",
+        });
+
+        generatedCards.push({ id: cardId, token, qrCode: qrCodeDataUrl, cardUrl, grid });
+      }
+
+      return {
+        success: true,
+        cards: generatedCards,
+        totalPaid: Number(room.cardPrice) * input.quantity,
+        roomName: room.name,
+      };
+    }),
+
+  // Dados completos para tela de transmissão (TV/telão)
+  getShowData: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const room = await getRoomBySlug(input.slug);
+      if (!room) throw new TRPCError({ code: "NOT_FOUND" });
+      const drawn = await getDrawnNumbers(room.id);
+      const winners = await getWinnersByRoom(room.id);
+      const soldCount = await countCardsByRoom(room.id);
+      return {
+        id: room.id,
+        name: room.name,
+        description: room.description,
+        status: room.status,
+        currentBall: room.currentBall,
+        winCondition: room.winCondition,
+        prize: room.prize,
+        prizeDescription: room.prizeDescription,
+        drawIntervalSeconds: room.drawIntervalSeconds,
+        drawnNumbers: drawn,
+        winners,
+        soldCount,
+        publicSlug: room.publicSlug,
+      };
+    }),
+});
+
 // ─── App Router ───────────────────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
@@ -539,6 +669,7 @@ export const appRouter = router({
   transactions: transactionsRouter,
   subscriptions: subscriptionsRouter,
   admin: adminRouter,
+  publicBuy: publicBuyRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -104,6 +104,8 @@ export default function RoomDetail() {
 
   const drawnNumbers = drawnData?.map((d) => d.number) ?? [];
   const liveUrl = `${window.location.origin}/live/${room.publicSlug}`;
+  const buyUrl = `${window.location.origin}/buy/${room.publicSlug}`;
+  const showUrl = `${window.location.origin}/show/${room.publicSlug}`;
 
   return (
     <DashboardLayout>
@@ -124,12 +126,18 @@ export default function RoomDetail() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => window.open(liveUrl, "_blank")}>
-              <ExternalLink className="w-3 h-3 mr-1" /> Tela Ao Vivo
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => window.open(buyUrl, "_blank")} title="Página de compra pública">
+              <ExternalLink className="w-3 h-3 mr-1" /> Compra Pública
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(liveUrl); toast.success("Link copiado!"); }}>
+            <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(buyUrl); toast.success("Link de compra copiado!"); }} title="Copiar link de compra">
               <Copy className="w-3 h-3" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => window.open(showUrl, "_blank")} title="Tela de transmissão para TV/telão">
+              <ExternalLink className="w-3 h-3 mr-1" /> Transmissão TV
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => window.open(liveUrl, "_blank")} title="Tela ao vivo para jogadores">
+              <ExternalLink className="w-3 h-3 mr-1" /> Tela Jogadores
             </Button>
           </div>
         </div>

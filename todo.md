@@ -94,3 +94,15 @@
 - [x] Informações de prêmios (Prêmio 1, 2, 3) no topo
 - [x] Navegação por páginas quando há muitas cartelas
 - [x] Integração da seleção com geração de cartelas
+
+## Fase 3 - Compra Pública e Tela de Transmissão
+- [x] Router público para buscar sala por slug (sem autenticação)
+- [x] Router público para comprar cartelas (nome + telefone + quantidade)
+- [x] Página de compra pública /buy/:slug estilo Moderninha
+- [x] Tela de transmissão ao vivo /show/:slug para TV/telão
+- [x] Bola animada grande com número sorteado em destaque
+- [x] Painel B-I-N-G-O completo com todos os 75 números
+- [x] Histórico dos últimos números sorteados
+- [x] Contador de cartelas vendidas e prêmio em destaque
+- [x] Animação de ganhador (overlay de celebração)
+- [x] Links de compartilhamento no painel do operador
