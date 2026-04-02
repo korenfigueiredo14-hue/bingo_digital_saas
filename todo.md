@@ -135,3 +135,7 @@
 
 ## Fase 7 - Limpeza de Menu
 - [x] Remover item "Assinatura" do menu lateral
+
+## Fase 8 - Dashboard Premium
+- [x] Remover banner "Plano Free / Fazer upgrade" do Dashboard
+- [x] Adicionar seção de recursos ativos: Salas ilimitadas, Cartelas ilimitadas, API PagSeguro, Marca branca, Servidor dedicado
