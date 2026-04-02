@@ -129,3 +129,6 @@
 - [x] Mini-cartelas dos ganhadores na parte inferior
 - [x] Contador de bolas sorteadas
 - [x] Prêmio total e prêmio atual em destaque
+
+## Bugs
+- [x] Coluna status não existe no banco real da tabela bingo_cards — tabela criada com SQL compatível com TiDB (sem DEFAULT em JSON)

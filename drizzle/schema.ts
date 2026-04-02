@@ -74,7 +74,7 @@ export const bingoCards = mysqlTable("bingo_cards", {
   playerName: varchar("playerName", { length: 255 }),
   playerPhone: varchar("playerPhone", { length: 20 }),
   status: mysqlEnum("status", ["active", "winner", "cancelled"]).default("active").notNull(),
-  markedNumbers: json("markedNumbers").default([]), // números marcados
+  markedNumbers: json("markedNumbers"), // números marcados
   winType: mysqlEnum("winType", ["line", "column", "full_card"]),
   pricePaid: decimal("pricePaid", { precision: 10, scale: 2 }),
   transactionId: varchar("transactionId", { length: 128 }),
