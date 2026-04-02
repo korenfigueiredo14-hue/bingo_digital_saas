@@ -114,3 +114,7 @@
 - [x] Impressão automática das cartelas após confirmação de pagamento
 - [x] QR Code de cada cartela impresso junto para o jogador assistir ao vivo
 - [x] Layout de impressão otimizado para impressora térmica 80mm
+
+## Fase 5 - Simplificação de Acesso
+- [x] Remover landing page com planos e preços
+- [x] Rota raiz / redireciona direto para o painel (login se não autenticado)
