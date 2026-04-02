@@ -118,3 +118,14 @@
 ## Fase 5 - Simplificação de Acesso
 - [x] Remover landing page com planos e preços
 - [x] Rota raiz / redireciona direto para o painel (login se não autenticado)
+
+## Fase 6 - Tela Ao Vivo Profissional
+- [x] Fundo azul estrelado animado (gradiente + partículas/estrelas)
+- [x] Cabeçalho com logo/nome do bingo, badge AO VIVO, doação e acumulado
+- [x] Bola grande 3D animada com número sorteado em destaque central
+- [x] Histórico de últimas bolas sorteadas em miniatura (estilo bolas coloridas)
+- [x] Painel de números 1-75 com destaque nos sorteados (colunas B-I-N-G-O)
+- [x] Lista de jogadores/cartelas à esquerda com últimos números de cada cartela
+- [x] Mini-cartelas dos ganhadores na parte inferior
+- [x] Contador de bolas sorteadas
+- [x] Prêmio total e prêmio atual em destaque

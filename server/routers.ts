@@ -648,11 +648,11 @@ const publicBuyRouter = router({
         winners,
         soldCount,
         publicSlug: room.publicSlug,
+        cardPrice: room.cardPrice,
       };
     }),
 });
-
-// ─── App Router ───────────────────────────────────────────────────────────────
+// ─── App Router ────────────────────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
   auth: router({
