@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO subscription_plans (name, slug, monthlyPrice, maxRooms, maxCardsPerRoom, features) VALUES\n('Gratuito', 'free', 0.00, 1, 50, '[\"1 sala de bingo\",\"Até 50 cartelas por sala\",\"Suporte básico\"]'),\n('Básico', 'basic', 49.90, 3, 200, '[\"3 salas simultâneas\",\"Até 200 cartelas por sala\",\"Relatórios básicos\",\"Suporte por email\"]'),\n('Profissional', 'professional', 99.90, 10, 500, '[\"10 salas simultâneas\",\"Até 500 cartelas por sala\",\"Relatórios avançados\",\"Suporte prioritário\",\"QR Code personalizado\"]'),\n('Premium', 'premium', 199.90, 999, 9999, '[\"Salas ilimitadas\",\"Cartelas ilimitadas\",\"Relatórios completos\",\"Suporte 24/7\",\"API de integração\",\"White-label\"]')",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user vrWyYUW2JTziLad.52c21d10e741 --database RCLeTT3ExF2cnxXYrmLXbv --execute INSERT INTO subscription_plans (name, slug, monthlyPrice, maxRooms, maxCardsPerRoom, features) VALUES\n('Gratuito', 'free', 0.00, 1, 50, '[\"1 sala de bingo\",\"Até 50 cartelas por sala\",\"Suporte básico\"]'),\n('Básico', 'basic', 49.90, 3, 200, '[\"3 salas simultâneas\",\"Até 200 cartelas por sala\",\"Relatórios básicos\",\"Suporte por email\"]'),\n('Profissional', 'professional', 99.90, 10, 500, '[\"10 salas simultâneas\",\"Até 500 cartelas por sala\",\"Relatórios avançados\",\"Suporte prioritário\",\"QR Code personalizado\"]'),\n('Premium', 'premium', 199.90, 999, 9999, '[\"Salas ilimitadas\",\"Cartelas ilimitadas\",\"Relatórios completos\",\"Suporte 24/7\",\"API de integração\",\"White-label\"]')",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 372
+}

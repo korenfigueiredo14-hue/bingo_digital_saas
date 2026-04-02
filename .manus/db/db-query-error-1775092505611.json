@@ -1,0 +1,17 @@
+{
+  "query": "CREATE TABLE `bingo_cards` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`roomId` int NOT NULL,\n\t`operatorId` int NOT NULL,\n\t`token` varchar(128) NOT NULL,\n\t`qrCodeData` text,\n\t`grid` json NOT NULL,\n\t`playerName` varchar(255),\n\t`playerPhone` varchar(20),\n\t`status` enum('active','winner','cancelled') NOT NULL DEFAULT 'active',\n\t`markedNumbers` json DEFAULT ('[]'),\n\t`winType` enum('line','column','full_card'),\n\t`pricePaid` decimal(10,2),\n\t`transactionId` varchar(128),\n\t`printedAt` timestamp,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `bingo_cards_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `bingo_cards_token_unique` UNIQUE(`token`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user vrWyYUW2JTziLad.52c21d10e741 --database RCLeTT3ExF2cnxXYrmLXbv --execute CREATE TABLE `bingo_cards` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`roomId` int NOT NULL,\n\t`operatorId` int NOT NULL,\n\t`token` varchar(128) NOT NULL,\n\t`qrCodeData` text,\n\t`grid` json NOT NULL,\n\t`playerName` varchar(255),\n\t`playerPhone` varchar(20),\n\t`status` enum('active','winner','cancelled') NOT NULL DEFAULT 'active',\n\t`markedNumbers` json DEFAULT ('[]'),\n\t`winType` enum('line','column','full_card'),\n\t`pricePaid` decimal(10,2),\n\t`transactionId` varchar(128),\n\t`printedAt` timestamp,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `bingo_cards_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `bingo_cards_token_unique` UNIQUE(`token`)\n)",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 11 column 36 near \"'[]'),",
+    "\t`winType` enum('line','column','full_card'),",
+    "\t`pricePaid` decimal(10,2),",
+    "\t`transactionId` varchar(128),",
+    "\t`printedAt` timestamp,",
+    "\t`createdAt` timestamp NOT NULL DEFAULT (now()),",
+    "\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,",
+    "\tCONSTRAINT `bingo_cards_id` PRIMARY KEY(`id`),",
+    "\tCONSTRAINT `bingo_cards_token_unique` UNIQUE(`token`)",
+    ")"
+  ]
+}
