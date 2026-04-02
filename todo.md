@@ -79,3 +79,18 @@
 - [x] Testes de auth.logout
 - [x] 17 testes passando (2 arquivos)
 - [x] Checkpoint final
+
+## Novos Requisitos (Fase 2)
+- [x] Tela de Operação ao Vivo (BingoOperator): painel completo para o operador conduzir o bingo
+- [x] Painel B-I-N-G-O com todos os 75 números destacando sorteados
+- [x] Botão de sorteio manual grande e visível
+- [x] Sorteio automático com contagem regressiva
+- [x] Último número sorteado em destaque animado
+- [x] Lista de ganhadores em tempo real
+- [x] Controles de status (iniciar/pausar/encerrar) integrados
+- [x] Seleção de cartelas estilo Moderninha Smart (CardSelector)
+- [x] Botões numerados (1 a N cartelas) com preço por cartela
+- [x] Preço acumulado conforme seleção
+- [x] Informações de prêmios (Prêmio 1, 2, 3) no topo
+- [x] Navegação por páginas quando há muitas cartelas
+- [x] Integração da seleção com geração de cartelas

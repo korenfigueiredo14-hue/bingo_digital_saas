@@ -14,6 +14,9 @@ import LiveBingo from "./pages/LiveBingo";
 import PrintCard from "./pages/PrintCard";
 import Reports from "./pages/Reports";
 import Subscription from "./pages/Subscription";
+import BingoOperator from "./pages/BingoOperator";
+import CardSelector from "./pages/CardSelector";
+import OperatorSelect from "./pages/OperatorSelect";
 
 function Router() {
   return (
@@ -29,6 +32,9 @@ function Router() {
       <Route path="/rooms" component={RoomList} />
       <Route path="/rooms/new" component={RoomCreate} />
       <Route path="/rooms/:id" component={RoomDetail} />
+      <Route path="/operator" component={OperatorSelect} />
+      <Route path="/operator/:id" component={BingoOperator} />
+      <Route path="/sell/:id" component={CardSelector} />
       <Route path="/reports" component={Reports} />
       <Route path="/subscription" component={Subscription} />
 
