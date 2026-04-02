@@ -26,8 +26,8 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
-const CARD_PRICE = 0.01;
-const CARDS_PER_PAGE = 9;
+const CARD_PRICE = 0.50;
+const CARDS_PER_PAGE = 12;
 
 const COLUMN_COLORS: Record<string, string> = {
   B: "bg-blue-600",
@@ -198,7 +198,7 @@ export default function SellCards() {
 
   const soldCount = cardsData?.length ?? 0;
   const available = (room?.maxCards ?? 0) - soldCount;
-  const totalPages = Math.ceil(Math.min(available, 50) / CARDS_PER_PAGE);
+  const totalPages = Math.ceil(Math.min(available, 120) / CARDS_PER_PAGE);
   const startNum = page * CARDS_PER_PAGE + 1;
   const endNum = Math.min(startNum + CARDS_PER_PAGE - 1, available);
   const pageNumbers = Array.from({ length: Math.max(0, endNum - startNum + 1) }, (_, i) => startNum + i);
@@ -423,7 +423,7 @@ export default function SellCards() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {pageNumbers.map((n) => {
                   const isSelected = quantity === n;
                   const price = n * CARD_PRICE;
@@ -440,7 +440,7 @@ export default function SellCards() {
                         }
                       `}
                     >
-                      <span className="text-2xl font-black">{n}</span>
+                      <span className="text-xl font-black">{n}</span>
                       <span className={`text-xs font-semibold ${isSelected ? "text-white/90" : "text-muted-foreground"}`}>
                         R$ {price.toFixed(2)}
                       </span>
@@ -486,7 +486,7 @@ export default function SellCards() {
         {quantity > 0 && (
           <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{quantity} cartela(s) × R$ 0,01</span>
+              <span className="text-muted-foreground">{quantity} cartela(s) × R$ 0,50</span>
               <span className="font-bold text-yellow-400 text-lg">R$ {totalPrice.toFixed(2)}</span>
             </div>
             <Button
@@ -549,7 +549,7 @@ export default function SellCards() {
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-5">
               <p className="text-muted-foreground text-sm mb-1">Valor a cobrar</p>
               <p className="text-4xl font-black text-yellow-400">R$ {totalPrice.toFixed(2)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{quantity} cartela(s) × R$ 0,01</p>
+              <p className="text-xs text-muted-foreground mt-1">{quantity} cartela(s) × R$ 0,50</p>
             </div>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>1. Insira o valor <strong className="text-foreground">R$ {totalPrice.toFixed(2)}</strong> na maquininha</p>

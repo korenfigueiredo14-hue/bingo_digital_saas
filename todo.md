@@ -139,3 +139,7 @@
 ## Fase 8 - Dashboard Premium
 - [x] Remover banner "Plano Free / Fazer upgrade" do Dashboard
 - [x] Adicionar seção de recursos ativos: Salas ilimitadas, Cartelas ilimitadas, API PagSeguro, Marca branca, Servidor dedicado
+
+## Fase 9 - Preço e Quantidades de Cartela
+- [x] Atualizar preço fixo de R$0,01 para R$0,50 por cartela
+- [x] Ampliar opões de quantidade na tela de venda (mais botões de seleção)
