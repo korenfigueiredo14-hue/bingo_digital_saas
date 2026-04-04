@@ -151,3 +151,7 @@
 
 ## Fase 11 - Correção Definitiva do Erro de Impressão
 - [x] Corrigir definitivamente NotFoundError ao clicar em "Pagamento Aprovado — Gerar e Imprimir" (useEffect + requestAnimationFrame para aguardar Dialog fechar)
+
+## Fase 12 - Salas Ilimitadas
+- [x] Remover verificação de limite de salas no backend (router rooms.create)
+- [x] Remover aviso/bloqueio de limite de salas no frontend (RoomCreate, RoomList) — sem avisos encontrados

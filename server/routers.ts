@@ -79,16 +79,6 @@ const bingoRoomsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const limits = getPlanLimits(ctx.user.subscriptionPlan);
-      const existingRooms = await getRoomsByOperator(ctx.user.id);
-      const activeRooms = existingRooms.filter((r) => r.status !== "finished");
-      if (activeRooms.length >= limits.maxRooms) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: `Seu plano permite no máximo ${limits.maxRooms} sala(s) ativa(s). Faça upgrade para criar mais.`,
-        });
-      }
-
       const slug = nanoid(10).toLowerCase();
       const id = await createRoom({
         operatorId: ctx.user.id,
