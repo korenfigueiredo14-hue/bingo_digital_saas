@@ -204,3 +204,7 @@
 - [x] Criar tela /register com formulário de cadastro
 - [x] Atualizar App.tsx para redirecionar para /login em vez do OAuth Manus
 - [x] Remover botão "Entrar com Manus" da interface
+
+## Fase 18 - Correções de Bugs
+- [x] Corrigir redirecionamento OAuth Manus na página inicial (Home.tsx → /login)
+- [x] Corrigir erro de DOM "insertBefore" no SellCards ao gerar e imprimir cartelas

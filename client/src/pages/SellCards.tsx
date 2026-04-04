@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -151,27 +151,8 @@ export default function SellCards() {
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showQrCode, setShowQrCode] = useState<string>("");
-  const pendingPrintRef = useRef<{ cards: GeneratedCard[]; showUrl: string; showQr: string } | null>(null);
-
   const { data: room, isLoading } = trpc.rooms.getById.useQuery({ id: roomId });
   const { data: cardsData } = trpc.cards.listByRoom.useQuery({ roomId });
-
-  // Dispara impressão somente após Dialog estar completamente fechado
-  useEffect(() => {
-    if (!showPayment && !showConfirm && pendingPrintRef.current) {
-      const { cards, showUrl, showQr } = pendingPrintRef.current;
-      pendingPrintRef.current = null;
-      // Aguarda 2 frames para o Radix UI terminar de desmontar o Portal
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            const html = buildPrintHtml(cards, playerName, room?.name ?? "Bingo", showUrl, showQr);
-            printInNewWindow(html);
-          }, 150);
-        });
-      });
-    }
-  }, [showPayment, showConfirm]);
 
   const generateMutation = trpc.cards.generate.useMutation({
     onSuccess: async (data) => {
@@ -192,12 +173,18 @@ export default function SellCards() {
         }
       }
 
-      // Agenda impressão para depois que os Dialogs fecharem
-      pendingPrintRef.current = { cards, showUrl, showQr: qr };
+      const roomName = room?.name ?? "Bingo";
 
-      // Fecha o Dialog de pagamento — o useEffect acima dispara a impressão
+      // Fecha o Dialog de pagamento primeiro, depois imprime com delay seguro
       setShowPayment(false);
       setShowSuccess(true);
+
+      // Aguarda o Dialog do Radix UI ser completamente desmontado antes de imprimir
+      // Usar setTimeout com delay maior para garantir que o Portal foi removido do DOM
+      setTimeout(() => {
+        const html = buildPrintHtml(cards, playerName, roomName, showUrl, qr);
+        printInNewWindow(html);
+      }, 600);
     },
     onError: (err) => {
       toast.error(err.message);
