@@ -211,3 +211,10 @@
 
 ## Fase 19 - Correção Definitiva do Erro insertBefore
 - [x] Refatorar SellCards para eliminar erro de DOM ao fechar Dialog e imprimir
+
+## Fase 20 - PWA (Progressive Web App)
+- [x] Gerar ícones personalizados (192x192 e 512x512) para o Bingo Digital
+- [x] Criar manifest.json com nome, cores e ícones
+- [x] Configurar vite-plugin-pwa para service worker automático
+- [x] Adicionar meta tags de PWA no index.html
+- [x] Testar instalação como app no celular

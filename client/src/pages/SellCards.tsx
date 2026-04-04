@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -28,9 +28,6 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 const CARD_PRICE = 0.50;
 const CARDS_PER_PAGE = 12;
-
-// Máquina de estados para controlar o fluxo sem conflito de DOM
-type Step = "form" | "confirm" | "payment" | "success";
 
 type GeneratedCard = {
   id: number;
@@ -65,12 +62,9 @@ function buildPrintHtml(
             <div style="font-size:7px;color:#888;line-height:1">${getColLabelSell(num)}</div><div>${num}</div></td>`)
           .join("")
       );
-
-      const separator =
-        idx < cards.length - 1
-          ? `<div style="border-top:1px dashed #000;margin-top:3mm;padding-top:1mm;text-align:center;font-size:8px;color:#999">✂ ─────────────────────────────────</div>`
-          : "";
-
+      const separator = idx < cards.length - 1
+        ? `<div style="border-top:1px dashed #000;margin-top:3mm;padding-top:1mm;text-align:center;font-size:8px;color:#999">✂ ─────────────────────────────────</div>`
+        : "";
       return `
         <div style="width:72mm;padding:4mm;margin-bottom:4mm;page-break-inside:avoid;font-family:monospace;font-size:10px;border:1px solid #000">
           <div style="text-align:center;margin-bottom:3mm;border-bottom:1px dashed #000;padding-bottom:2mm">
@@ -142,16 +136,47 @@ export default function SellCards() {
   const roomId = parseInt(id);
   const [, navigate] = useLocation();
 
-  const [step, setStep] = useState<Step>("form");
   const [playerName, setPlayerName] = useState("");
   const [playerPhone, setPlayerPhone] = useState("");
   const [quantity, setQuantity] = useState(0);
   const [page, setPage] = useState(0);
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
   const [showQrCode, setShowQrCode] = useState<string>("");
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // Guarda os dados para imprimir APÓS o Dialog fechar completamente
-  const printQueueRef = useRef<{ cards: GeneratedCard[]; playerName: string; roomName: string; showUrl: string; showQr: string } | null>(null);
+  // Dialog states — controlados separadamente do fluxo de tela
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+
+  // Fila de impressão: preenchida no onSuccess, consumida após Dialog fechar
+  const printQueueRef = useRef<{
+    cards: GeneratedCard[];
+    playerName: string;
+    roomName: string;
+    showUrl: string;
+    showQr: string;
+  } | null>(null);
+
+  // Quando paymentOpen muda para false E há dados na fila → muda para tela de sucesso
+  // Isso garante que o Dialog já fechou antes de qualquer mudança de árvore
+  useEffect(() => {
+    if (!paymentOpen && printQueueRef.current) {
+      const pending = printQueueRef.current;
+      printQueueRef.current = null;
+      // Dois frames para garantir que o Portal do Radix foi completamente desmontado
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setShowSuccess(true);
+          // Impressão depois de mais um frame (tela de sucesso já renderizou)
+          setTimeout(() => {
+            printInNewWindow(
+              buildPrintHtml(pending.cards, pending.playerName, pending.roomName, pending.showUrl, pending.showQr)
+            );
+          }, 200);
+        });
+      });
+    }
+  }, [paymentOpen]);
 
   const { data: room, isLoading } = trpc.rooms.getById.useQuery({ id: roomId });
   const { data: cardsData } = trpc.cards.listByRoom.useQuery({ roomId });
@@ -172,7 +197,7 @@ export default function SellCards() {
         } catch { /* sem QR */ }
       }
 
-      // Salva na fila de impressão ANTES de mudar o step
+      // Salva na fila ANTES de fechar o Dialog
       printQueueRef.current = {
         cards,
         playerName,
@@ -181,23 +206,13 @@ export default function SellCards() {
         showQr: qr,
       };
 
-      // Muda para "success" — o Dialog de payment vai fechar
-      // A impressão será disparada pelo onCloseAutoFocus do Dialog
-      setStep("success");
+      // Fecha o Dialog — o useEffect acima detecta paymentOpen=false e age
+      setPaymentOpen(false);
     },
     onError: (err) => {
       toast.error(err.message);
     },
   });
-
-  // Chamado pelo Radix Dialog quando a animação de fechamento termina
-  const handlePaymentDialogClosed = useCallback(() => {
-    if (printQueueRef.current) {
-      const { cards, playerName: pName, roomName, showUrl, showQr } = printQueueRef.current;
-      printQueueRef.current = null;
-      printInNewWindow(buildPrintHtml(cards, pName, roomName, showUrl, showQr));
-    }
-  }, []);
 
   const soldCount = cardsData?.length ?? 0;
   const available = (room?.maxCards ?? 0) - soldCount;
@@ -212,7 +227,7 @@ export default function SellCards() {
     if (!playerName.trim()) { toast.error("Informe o nome do jogador"); return; }
     if (!playerPhone.trim()) { toast.error("Informe o telefone"); return; }
     if (quantity < 1) { toast.error("Selecione pelo menos 1 cartela"); return; }
-    setStep("confirm");
+    setConfirmOpen(true);
   }
 
   function handleConfirmPayment() {
@@ -224,10 +239,10 @@ export default function SellCards() {
     });
   }
 
-  function handleReprint() {
+  const handleReprint = useCallback(() => {
     if (!room) return;
     printInNewWindow(buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode));
-  }
+  }, [generatedCards, playerName, room, showUrl, showQrCode]);
 
   function handleNewSale() {
     setPlayerName("");
@@ -236,7 +251,7 @@ export default function SellCards() {
     setPage(0);
     setGeneratedCards([]);
     setShowQrCode("");
-    setStep("form");
+    setShowSuccess(false);
   }
 
   if (isLoading) {
@@ -258,7 +273,7 @@ export default function SellCards() {
   }
 
   // ── Tela de sucesso ──────────────────────────────────────────────────────────
-  if (step === "success" && generatedCards.length > 0) {
+  if (showSuccess && generatedCards.length > 0) {
     return (
       <DashboardLayout>
         <div className="max-w-lg space-y-5">
@@ -464,9 +479,12 @@ export default function SellCards() {
         )}
       </div>
 
-      {/* Modal de confirmação */}
-      <Dialog open={step === "confirm"} onOpenChange={(open) => { if (!open) setStep("form"); }}>
-        <DialogContent className="bg-card border-border text-foreground max-w-sm">
+      {/* Modal de confirmação — sempre montado, controlado por confirmOpen */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent
+          className="bg-card border-border text-foreground max-w-sm"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Confirmar Venda</DialogTitle>
           </DialogHeader>
@@ -491,22 +509,34 @@ export default function SellCards() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setStep("form")}>Voltar</Button>
-            <Button onClick={() => setStep("payment")} className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Voltar</Button>
+            <Button
+              onClick={() => {
+                setConfirmOpen(false);
+                // Pequeno delay para o Dialog de confirmação fechar antes de abrir o de pagamento
+                setTimeout(() => setPaymentOpen(true), 150);
+              }}
+              className="gap-2"
+            >
               <DollarSign className="w-4 h-4" /> Ir para Pagamento
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal de pagamento — onCloseAutoFocus dispara a impressão APÓS animação de saída */}
+      {/* Modal de pagamento — sempre montado, controlado por paymentOpen */}
       <Dialog
-        open={step === "payment"}
-        onOpenChange={(open) => { if (!open && !generateMutation.isPending) setStep("form"); }}
+        open={paymentOpen}
+        onOpenChange={(open) => {
+          // Só permite fechar manualmente se não estiver processando
+          if (!open && !generateMutation.isPending) {
+            setPaymentOpen(false);
+          }
+        }}
       >
         <DialogContent
           className="bg-card border-border text-foreground max-w-sm"
-          onCloseAutoFocus={handlePaymentDialogClosed}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -548,7 +578,7 @@ export default function SellCards() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setStep("form")}
+              onClick={() => setPaymentOpen(false)}
               disabled={generateMutation.isPending}
             >
               Cancelar

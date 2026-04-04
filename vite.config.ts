@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { VitePWA } from "vite-plugin-pwa";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -150,7 +151,54 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const pwaPlugin = VitePWA({
+  registerType: "autoUpdate",
+  includeAssets: ["favicon.ico"],
+  manifest: {
+    name: "Bingo Digital SaaS",
+    short_name: "Bingo Digital",
+    description: "Sistema de bingo digital com sorteio ao vivo",
+    theme_color: "#0f172a",
+    background_color: "#0f172a",
+    display: "standalone",
+    orientation: "portrait",
+    start_url: "/",
+    scope: "/",
+    lang: "pt-BR",
+    icons: [
+      {
+        src: "https://d2xsxph8kpxj0f.cloudfront.net/310519663083022620/RCLeTT3ExF2cnxXYrmLXbv/pwa-icon-192-fyn8edtbnyM9gzYpCmcpoV.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any maskable",
+      },
+      {
+        src: "https://d2xsxph8kpxj0f.cloudfront.net/310519663083022620/RCLeTT3ExF2cnxXYrmLXbv/pwa-icon-512-LhMuEdsnmwLSh5aCZMsUXG.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any maskable",
+      },
+    ],
+  },
+  workbox: {
+    globPatterns: ["**/*.{js,css,html}"],
+    runtimeCaching: [
+      {
+        urlPattern: /^\/api\//,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "api-cache",
+          expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+        },
+      },
+    ],
+  },
+  devOptions: {
+    enabled: false,
+  },
+});
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), pwaPlugin];
 
 export default defineConfig({
   plugins,
