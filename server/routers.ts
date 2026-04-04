@@ -7,6 +7,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { generateCard, generate15Numbers, getColumnLabel } from "./bingo-engine";
+import { BingoCard } from "../drizzle/schema";
 import {
   clearDrawnNumbers,
   countCardsByRoom,
@@ -17,6 +18,7 @@ import {
   deleteRoom,
   getCardByToken,
   getCardsByRoom,
+  getCardsByRoomPublic,
   getDrawnNumbers,
   getRoomById,
   getRoomBySlug,
@@ -642,8 +644,10 @@ const publicBuyRouter = router({
       const room = await getRoomBySlug(input.slug);
       if (!room) throw new TRPCError({ code: "NOT_FOUND" });
       const drawn = await getDrawnNumbers(room.id);
-      const winners = await getWinnersByRoom(room.id);
+      const winnersData = await getWinnersByRoom(room.id);
       const soldCount = await countCardsByRoom(room.id);
+      // Buscar cartelas da sala para exibir no telão (sem autenticação)
+      const allCards = await getCardsByRoomPublic(room.id);
       return {
         id: room.id,
         name: room.name,
@@ -658,10 +662,18 @@ const publicBuyRouter = router({
         prizeFullCard: room.prizeFullCard,
         drawIntervalSeconds: room.drawIntervalSeconds,
         drawnNumbers: drawn,
-        winners,
+        winners: winnersData,
         soldCount,
         publicSlug: room.publicSlug,
         cardPrice: room.cardPrice,
+        cards: allCards.map((c: BingoCard) => ({
+          id: c.id,
+          token: c.token,
+          playerName: c.playerName,
+          status: c.status,
+          cardNumbers: c.cardNumbers as number[] | null,
+          grid: c.grid,
+        })),
       };
     }),
 });

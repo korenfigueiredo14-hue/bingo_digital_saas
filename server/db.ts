@@ -158,6 +158,17 @@ export async function getCardsByRoom(roomId: number, operatorId: number): Promis
     .orderBy(desc(bingoCards.createdAt));
 }
 
+export async function getCardsByRoomPublic(roomId: number): Promise<BingoCard[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(bingoCards)
+    .where(and(eq(bingoCards.roomId, roomId), eq(bingoCards.status, "active")))
+    .orderBy(desc(bingoCards.createdAt))
+    .limit(200); // limitar para não sobrecarregar o telão
+}
+
 export async function getCardByToken(token: string): Promise<BingoCard | undefined> {
   const db = await getDb();
   if (!db) return undefined;

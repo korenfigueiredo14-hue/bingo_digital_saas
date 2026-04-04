@@ -1,88 +1,182 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { io, Socket } from "socket.io-client";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const COLS = [
-  { label: "B", min: 1,  max: 15,  color: "#1565c0", glow: "#1e90ff" },
-  { label: "I", min: 16, max: 30,  color: "#6a1b9a", glow: "#ab47bc" },
-  { label: "N", min: 31, max: 45,  color: "#b71c1c", glow: "#ef5350" },
-  { label: "G", min: 46, max: 60,  color: "#1b5e20", glow: "#66bb6a" },
-  { label: "O", min: 61, max: 75,  color: "#e65100", glow: "#ffa726" },
-];
 
+// Bingo 1-90: B=1-18, I=19-36, N=37-54, G=55-72, O=73-90
 function getColIdx(n: number) {
-  if (n <= 15) return 0;
-  if (n <= 30) return 1;
-  if (n <= 45) return 2;
-  if (n <= 60) return 3;
+  if (n <= 18) return 0;
+  if (n <= 36) return 1;
+  if (n <= 54) return 2;
+  if (n <= 72) return 3;
   return 4;
 }
-function getColLabel(n: number) { return COLS[getColIdx(n)].label; }
-function getColColor(n: number) { return COLS[getColIdx(n)].color; }
-function getColGlow(n: number)  { return COLS[getColIdx(n)].glow; }
 
-// ─── BingoBall ────────────────────────────────────────────────────────────────
-function BingoBall({ n, size = 48 }: { n: number; size?: number }) {
-  const color = getColColor(n);
-  const glow  = getColGlow(n);
-  return (
+const COL_LABELS = ["B", "I", "N", "G", "O"];
+const COL_COLORS = [
+  { bg: "#1565c0", glow: "#1e90ff", light: "#90caf9" }, // B - azul
+  { bg: "#6a1b9a", glow: "#ab47bc", light: "#ce93d8" }, // I - roxo
+  { bg: "#b71c1c", glow: "#ef5350", light: "#ef9a9a" }, // N - vermelho
+  { bg: "#1b5e20", glow: "#66bb6a", light: "#a5d6a7" }, // G - verde
+  { bg: "#e65100", glow: "#ffa726", light: "#ffcc80" }, // O - laranja
+];
+
+function getColLabel(n: number) { return COL_LABELS[getColIdx(n)]; }
+function getColBg(n: number)    { return COL_COLORS[getColIdx(n)].bg; }
+function getColGlow(n: number)  { return COL_COLORS[getColIdx(n)].glow; }
+function getColLight(n: number) { return COL_COLORS[getColIdx(n)].light; }
+
+function formatR$(val: any) {
+  const n = Number(val ?? 0);
+  return n > 0 ? `R$ ${n.toFixed(2)}` : "—";
+}
+
+function winLabel(wt: string) {
+  if (wt === "full_card") return "BINGO!";
+  if (wt === "quina") return "QUINA";
+  if (wt === "quadra") return "QUADRA";
+  return wt?.toUpperCase() ?? "";
+}
+
+// ─── Stars (memoized) ─────────────────────────────────────────────────────────
+const STARS = Array.from({ length: 120 }, () => ({
+  x: Math.random() * 100, y: Math.random() * 100,
+  s: Math.random() * 2.2 + 0.4,
+  o: Math.random() * 0.55 + 0.2,
+  d: (Math.random() * 4).toFixed(1),
+}));
+
+// ─── BingoBall (grande) ───────────────────────────────────────────────────────
+function BigBall({ n, animKey }: { n: number | null; animKey: number }) {
+  if (!n) return (
     <div style={{
-      width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: `radial-gradient(circle at 32% 28%, ${glow}cc, ${color} 58%, #000b 100%)`,
-      boxShadow: `0 0 ${size*0.25}px ${glow}88, inset 0 -3px 8px #0007`,
-      border: `2px solid ${glow}66`,
+      width: 160, height: 160, borderRadius: "50%",
+      background: "radial-gradient(circle at 35% 30%, #1e3a6a, #060e24)",
+      border: "4px solid #1e90ff22",
       display: "flex", alignItems: "center", justifyContent: "center",
+      boxShadow: "0 0 40px #1e90ff22",
+    }}>
+      <span style={{ color: "#1e3a6a", fontSize: 48, fontWeight: 900 }}>?</span>
+    </div>
+  );
+  const bg   = getColBg(n);
+  const glow = getColGlow(n);
+  return (
+    <div key={animKey} className="ball-in" style={{
+      width: 160, height: 160, borderRadius: "50%", flexShrink: 0,
+      background: `radial-gradient(circle at 32% 28%, ${glow}cc, ${bg} 55%, #000b 100%)`,
+      boxShadow: `0 0 60px ${glow}88, 0 0 20px ${glow}44, inset 0 -6px 18px #0009`,
+      border: `4px solid ${glow}55`,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       position: "relative",
     }}>
       <div style={{
         position: "absolute", top: "14%", left: "20%",
-        width: "28%", height: "18%", borderRadius: "50%",
-        background: "rgba(255,255,255,0.42)", filter: "blur(2px)",
-      }}/>
-      <span style={{ color: "#fff", fontWeight: 900, fontSize: size * 0.38, textShadow: "0 1px 4px #000a", lineHeight: 1 }}>
+        width: "30%", height: "20%", borderRadius: "50%",
+        background: "rgba(255,255,255,0.38)", filter: "blur(3px)",
+      }} />
+      <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, fontWeight: 700, lineHeight: 1 }}>
+        {getColLabel(n)}
+      </span>
+      <span style={{ color: "#fff", fontSize: 64, fontWeight: 900, lineHeight: 1, textShadow: "0 2px 8px #0008" }}>
         {n}
       </span>
     </div>
   );
 }
 
-// ─── Stars ────────────────────────────────────────────────────────────────────
-const STARS = Array.from({ length: 130 }, () => ({
-  x: Math.random() * 100, y: Math.random() * 100,
-  s: Math.random() * 2.2 + 0.4,
-  o: Math.random() * 0.65 + 0.2,
-  d: Math.random() * 4,
-}));
+// ─── MiniBall ─────────────────────────────────────────────────────────────────
+function MiniBall({ n, size = 40 }: { n: number; size?: number }) {
+  const bg   = getColBg(n);
+  const glow = getColGlow(n);
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: `radial-gradient(circle at 32% 28%, ${glow}cc, ${bg} 55%, #000b 100%)`,
+      boxShadow: `0 0 ${size * 0.3}px ${glow}66, inset 0 -2px 6px #0007`,
+      border: `2px solid ${glow}44`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <span style={{ color: "#fff", fontSize: size * 0.32, fontWeight: 900 }}>{n}</span>
+    </div>
+  );
+}
+
+// ─── WinnerMiniCard ───────────────────────────────────────────────────────────
+function WinnerMiniCard({ card, drawnSet, label, labelColor }: {
+  card: any; drawnSet: Set<number>; label: string; labelColor: string;
+}) {
+  const nums: number[] = card.cardNumbers
+    ?? (card.grid as number[][]).flat().filter((n: number) => n !== 0);
+  return (
+    <div style={{
+      background: "rgba(10,22,55,.9)", border: `1px solid ${labelColor}55`,
+      borderRadius: 10, padding: "8px 10px", minWidth: 200,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ color: labelColor, fontWeight: 900, fontSize: 11 }}>{label}</span>
+        <span style={{ color: "#90caf9", fontSize: 10 }}>#{card.token.slice(0, 8).toUpperCase()}</span>
+      </div>
+      {card.playerName && (
+        <p style={{ color: "#fff", fontWeight: 700, fontSize: 11, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {card.playerName}
+        </p>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}>
+        {nums.map((num) => {
+          const hit = drawnSet.has(num);
+          return (
+            <div key={num} style={{
+              width: 26, height: 26, borderRadius: 4,
+              background: hit
+                ? `radial-gradient(circle at 35% 30%, ${getColGlow(num)}cc, ${getColBg(num)} 60%)`
+                : "rgba(20,40,80,.7)",
+              border: hit ? `1px solid ${getColGlow(num)}55` : "1px solid #1e3a6a",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: hit ? "#fff" : "#3a5a8a",
+              fontSize: 9, fontWeight: 900,
+            }}>
+              {num}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function BingoShow() {
   const { slug } = useParams<{ slug: string }>();
-  const [drawn, setDrawn]           = useState<number[]>([]);
-  const [current, setCurrent]       = useState<number | null>(null);
-  const [animKey, setAnimKey]       = useState(0);
-  const [winners, setWinners]       = useState<any[]>([]);
-  const [showBingo, setShowBingo]   = useState(false);
-  const [bingoName, setBingoName]   = useState("");
+  const [drawn, setDrawn]         = useState<number[]>([]);
+  const [current, setCurrent]     = useState<number | null>(null);
+  const [animKey, setAnimKey]     = useState(0);
+  const [winners, setWinners]     = useState<any[]>([]);
+  const [cards, setCards]         = useState<any[]>([]);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayType, setOverlayType] = useState<string | null>(null);
+  const [overlayName, setOverlayName] = useState("");
   const prevBall   = useRef<number | null>(null);
   const prevWinLen = useRef(0);
   const socketRef  = useRef<Socket | null>(null);
 
   const { data: room, refetch } = trpc.publicBuy.getShowData.useQuery(
     { slug: slug! },
-    { enabled: !!slug, refetchInterval: 3500 }
+    { enabled: !!slug, refetchInterval: 4000 }
   );
 
   useEffect(() => {
     if (!room) return;
-    const nums = (room.drawnNumbers ?? []).map((d: any) => typeof d === "number" ? d : d.number).filter(Boolean);
+    const nums = (room.drawnNumbers ?? [])
+      .map((d: any) => typeof d === "number" ? d : d.number)
+      .filter(Boolean);
     setDrawn(nums);
     if (room.currentBall && room.currentBall !== prevBall.current) {
       prevBall.current = room.currentBall;
       setCurrent(room.currentBall);
       setAnimKey(k => k + 1);
-      // Voz
       if (window.speechSynthesis) {
         const u = new SpeechSynthesisUtterance(`${getColLabel(room.currentBall)} ${room.currentBall}`);
         u.lang = "pt-BR"; u.rate = 0.85;
@@ -91,16 +185,21 @@ export default function BingoShow() {
     }
     const w = room.winners ?? [];
     setWinners(w);
+    setCards((room as any).cards ?? []);
     if (w.length > prevWinLen.current) {
       prevWinLen.current = w.length;
       const last = w[w.length - 1];
-      setBingoName(last?.card?.playerName ?? "Ganhador!");
-      setShowBingo(true);
+      const wt: string = (last?.winner as any)?.winType ?? (last as any)?.winType ?? "full_card";
+      const name: string = last?.card?.playerName ?? (last?.winner as any)?.playerName ?? "Ganhador!";
+      setOverlayType(wt);
+      setOverlayName(name);
+      setShowOverlay(true);
+      const msg = wt === "full_card" ? "BINGO! Cartela cheia!" : wt === "quina" ? "Temos uma Quina!" : "Temos uma Quadra!";
       if (window.speechSynthesis) {
-        const u = new SpeechSynthesisUtterance("BINGO! Temos um ganhador!");
+        const u = new SpeechSynthesisUtterance(msg);
         u.lang = "pt-BR"; window.speechSynthesis.speak(u);
       }
-      setTimeout(() => setShowBingo(false), 5000);
+      setTimeout(() => setShowOverlay(false), 6000);
     }
   }, [room]);
 
@@ -115,11 +214,36 @@ export default function BingoShow() {
     return () => { s.disconnect(); };
   }, [room?.id]);
 
-  const prize      = Number(room?.prize ?? 0);
-  const cardPrice  = Number(room?.cardPrice ?? 0.01);
-  const soldCount  = room?.soldCount ?? 0;
+  const drawnSet = useMemo(() => new Set(drawn), [drawn]);
+  const recentBalls = useMemo(() => [...drawn].reverse().filter(n => n !== current).slice(0, 9), [drawn, current]);
+  const cardPrice   = Number(room?.cardPrice ?? 0.01);
+  const soldCount   = room?.soldCount ?? 0;
   const accumulated = soldCount * cardPrice;
-  const recentBalls = [...drawn].reverse().filter(n => n !== current).slice(0, 9);
+
+  // Ganhadores por tipo
+  const quadraWinner = winners.find((w: any) => (w.winner?.winType ?? w.winType) === "quadra");
+  const quinaWinner  = winners.find((w: any) => (w.winner?.winType ?? w.winType) === "quina");
+  const bingoWinner  = winners.find((w: any) => (w.winner?.winType ?? w.winType) === "full_card");
+
+  function findWinCard(winner: any) {
+    if (!winner) return null;
+    const cardId = winner.winner?.cardId ?? winner.cardId;
+    return cards.find((c: any) => c.id === cardId) ?? null;
+  }
+
+  // Painel 1-90: 9 linhas × 10 colunas
+  const numberGrid = useMemo(() =>
+    Array.from({ length: 9 }, (_, row) =>
+      Array.from({ length: 10 }, (_, col) => row * 10 + col + 1)
+    ), []);
+
+  // Overlay colors
+  const overlayColors: Record<string, { bg: string; border: string; label: string; emoji: string }> = {
+    quadra:    { bg: "#7c2d12", border: "#f97316", label: "QUADRA!", emoji: "🟠" },
+    quina:     { bg: "#1e3a8a", border: "#3b82f6", label: "QUINA!",  emoji: "🔵" },
+    full_card: { bg: "#713f12", border: "#eab308", label: "BINGO!",  emoji: "⭐" },
+  };
+  const oc = (overlayType && overlayColors[overlayType]) ? overlayColors[overlayType] : overlayColors.full_card;
 
   return (
     <div style={{
@@ -130,337 +254,323 @@ export default function BingoShow() {
       userSelect: "none",
     }}>
       <style>{`
-        @keyframes twinkle { 0%{opacity:.15} 100%{opacity:.9} }
-        @keyframes ballIn  { 0%{transform:scale(.2) rotate(-30deg);opacity:0} 65%{transform:scale(1.18) rotate(4deg);opacity:1} 100%{transform:scale(1) rotate(0);opacity:1} }
+        @keyframes twinkle { 0%{opacity:.1} 100%{opacity:.85} }
+        @keyframes ballIn  { 0%{transform:scale(.15) rotate(-25deg);opacity:0} 65%{transform:scale(1.2) rotate(3deg);opacity:1} 100%{transform:scale(1) rotate(0);opacity:1} }
         @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:.3} }
-        @keyframes winPop  { 0%{transform:scale(.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-        .ball-in  { animation: ballIn .85s cubic-bezier(.175,.885,.32,1.275) forwards; }
-        .blink    { animation: blink 1.2s ease-in-out infinite; }
-        .win-pop  { animation: winPop .6s ease forwards; }
+        @keyframes winPop  { 0%{transform:scale(.4);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+        @keyframes pulse   { 0%,100%{box-shadow:0 0 0 0 rgba(255,200,0,.4)} 50%{box-shadow:0 0 0 12px rgba(255,200,0,0)} }
+        .ball-in { animation: ballIn .9s cubic-bezier(.175,.885,.32,1.275) forwards; }
+        .blink   { animation: blink 1.2s ease-in-out infinite; }
+        .win-pop { animation: winPop .6s ease forwards; }
       `}</style>
 
       {/* Stars */}
-      <div style={{ position:"absolute", inset:0, pointerEvents:"none" }}>
-        {STARS.map((s,i) => (
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {STARS.map((s, i) => (
           <div key={i} style={{
-            position:"absolute", left:`${s.x}%`, top:`${s.y}%`,
-            width:s.s, height:s.s, borderRadius:"50%", background:"#fff",
-            opacity:s.o, animation:`twinkle 3s ${s.d}s infinite alternate`,
-          }}/>
+            position: "absolute", left: `${s.x}%`, top: `${s.y}%`,
+            width: s.s, height: s.s, borderRadius: "50%", background: "#fff",
+            opacity: s.o, animation: `twinkle 3s ${s.d}s infinite alternate`,
+          }} />
         ))}
       </div>
 
       {/* ── HEADER ── */}
       <div style={{
-        display:"flex", alignItems:"center", justifyContent:"space-between",
-        padding:"8px 18px", flexShrink:0,
-        background:"linear-gradient(90deg,#0b1d45 0%,#0a2560 50%,#0b1d45 100%)",
-        borderBottom:"2px solid #1e90ff33", position:"relative", zIndex:10,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "8px 16px", flexShrink: 0, position: "relative", zIndex: 10,
+        background: "linear-gradient(90deg,#0b1d45 0%,#0a2560 50%,#0b1d45 100%)",
+        borderBottom: "2px solid #1e90ff33",
       }}>
-        {/* AO VIVO + Nome */}
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="blink" style={{
-            background:"#c62828", color:"#fff", fontWeight:900,
-            fontSize:12, padding:"3px 9px", borderRadius:4, letterSpacing:1,
+            background: "#c62828", color: "#fff", fontWeight: 900,
+            fontSize: 11, padding: "3px 8px", borderRadius: 4, letterSpacing: 1,
           }}>AO VIVO</div>
-          <div>
-            <div style={{
-              fontSize:26, fontWeight:900, letterSpacing:2, textTransform:"uppercase",
-              background:"linear-gradient(90deg,#fff 0%,#90caf9 50%,#fff 100%)",
-              WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-            }}>{room?.name ?? "BINGO"}</div>
-            {room?.prizeDescription && (
-              <div style={{ fontSize:11, color:"#90caf9", marginTop:-2 }}>{room.prizeDescription}</div>
-            )}
-          </div>
+          <div style={{
+            fontSize: 28, fontWeight: 900, letterSpacing: 2, textTransform: "uppercase",
+            background: "linear-gradient(90deg,#fff 0%,#90caf9 50%,#fff 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          }}>{room?.name ?? "BINGO"}</div>
         </div>
 
         {/* Prêmios */}
-        <div style={{ display:"flex", gap:6 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {[
-            { label:"Cartela",      value:`R$ ${cardPrice.toFixed(2)}`,                                     border:"#1e90ff44", lc:"#90caf9" },
-            { label:"Acumulado",    value:`R$ ${accumulated.toFixed(2)}`,                                   border:"#ffa72644", lc:"#ffa726" },
-            ...(Number(room?.prizeQuadra) > 0 ? [{ label:"\u25a0 Quadra",       value:`R$ ${Number(room?.prizeQuadra).toFixed(2)}`,  border:"#ff980044", lc:"#ff9800" }] : []),
-            ...(Number(room?.prizeQuina)  > 0 ? [{ label:"\u25a0 Quina",        value:`R$ ${Number(room?.prizeQuina).toFixed(2)}`,   border:"#42a5f544", lc:"#42a5f5" }] : []),
-            ...(Number(room?.prizeFullCard) > 0 ? [{ label:"\u25a0 Cartela Cheia", value:`R$ ${Number(room?.prizeFullCard).toFixed(2)}`, border:"#66bb6a44", lc:"#66bb6a" }] : []),
-            ...(Number(room?.prizeQuadra) === 0 && Number(room?.prizeQuina) === 0 && Number(room?.prizeFullCard) === 0 ? [{ label:"Prêmio Total", value:`R$ ${prize.toFixed(2)}`, border:"#66bb6a44", lc:"#66bb6a" }] : []),
+            { label: "Cartela",       value: `R$ ${cardPrice.toFixed(2)}`,    border: "#1e90ff44", lc: "#90caf9" },
+            { label: "Acumulado",     value: `R$ ${accumulated.toFixed(2)}`,  border: "#ffa72644", lc: "#ffa726" },
+            ...(Number(room?.prizeQuadra) > 0   ? [{ label: "■ Quadra",       value: `R$ ${Number(room?.prizeQuadra).toFixed(2)}`,   border: "#ff980044", lc: "#ff9800" }] : []),
+            ...(Number(room?.prizeQuina) > 0    ? [{ label: "■ Quina",        value: `R$ ${Number(room?.prizeQuina).toFixed(2)}`,    border: "#42a5f544", lc: "#42a5f5" }] : []),
+            ...(Number(room?.prizeFullCard) > 0 ? [{ label: "■ Bingo",        value: `R$ ${Number(room?.prizeFullCard).toFixed(2)}`, border: "#66bb6a44", lc: "#66bb6a" }] : []),
           ].map(item => (
             <div key={item.label} style={{
-              background:"rgba(13,27,62,.9)", border:`1px solid ${item.border}`,
-              borderRadius:8, padding:"5px 12px", textAlign:"center", minWidth:100,
+              background: "rgba(13,27,62,.9)", border: `1px solid ${item.border}`,
+              borderRadius: 8, padding: "4px 12px", textAlign: "center", minWidth: 90,
             }}>
-              <div style={{ fontSize:9, color:item.lc, textTransform:"uppercase", letterSpacing:1 }}>{item.label}</div>
-              <div style={{ fontSize:16, fontWeight:900, color:"#fff" }}>{item.value}</div>
+              <div style={{ fontSize: 9, color: item.lc, textTransform: "uppercase", letterSpacing: 1 }}>{item.label}</div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>{item.value}</div>
             </div>
           ))}
+          <div style={{
+            background: "rgba(13,27,62,.9)", border: "1px solid #1e90ff33",
+            borderRadius: 8, padding: "4px 12px", textAlign: "center", minWidth: 70,
+          }}>
+            <div style={{ fontSize: 9, color: "#90caf9", textTransform: "uppercase", letterSpacing: 1 }}>Bolas</div>
+            <div style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>{drawn.length}/90</div>
+          </div>
         </div>
       </div>
 
       {/* ── BODY ── */}
       <div style={{
-        flex:1, display:"grid",
-        gridTemplateColumns:"200px 1fr 1fr",
-        gap:8, padding:"8px 12px",
-        position:"relative", zIndex:5, minHeight:0,
+        flex: 1, display: "grid",
+        gridTemplateColumns: "210px 1fr 320px",
+        gap: 8, padding: "8px 10px",
+        position: "relative", zIndex: 5, minHeight: 0,
       }}>
 
-        {/* ── ESQUERDA: lista de ganhadores / jogadores ── */}
+        {/* ── ESQUERDA: Lista de cartelas ── */}
         <div style={{
-          background:"rgba(10,22,55,.88)", border:"1px solid #1e90ff2a",
-          borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column",
+          background: "rgba(10,22,55,.85)", border: "1px solid #1e90ff22",
+          borderRadius: 10, overflow: "hidden", display: "flex", flexDirection: "column",
         }}>
           <div style={{
-            background:"linear-gradient(90deg,#1a3a7e,#0a2560)",
-            padding:"7px 10px", fontSize:11, fontWeight:700,
-            color:"#90caf9", textTransform:"uppercase", letterSpacing:1,
-            borderBottom:"1px solid #1e90ff2a",
-            display:"flex", justifyContent:"space-between",
+            background: "linear-gradient(90deg,#1a3a7e,#0a2560)",
+            padding: "7px 10px", fontSize: 11, fontWeight: 700,
+            color: "#90caf9", textTransform: "uppercase", letterSpacing: 1,
+            borderBottom: "1px solid #1e90ff2a",
+            display: "flex", justifyContent: "space-between",
           }}>
-            <span>Jogadores</span>
-            <span style={{ color:"#fff" }}>{soldCount}</span>
+            <span>Cartelas</span>
+            <span style={{ color: "#fff" }}>{soldCount}</span>
           </div>
-          <div style={{ flex:1, overflowY:"auto" }}>
-            {winners.length === 0 && soldCount === 0 && (
-              <div style={{ textAlign:"center", color:"#3a5a8a", padding:"16px 8px", fontSize:11 }}>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {cards.length === 0 && (
+              <div style={{ textAlign: "center", color: "#3a5a8a", padding: "16px 8px", fontSize: 11 }}>
                 Aguardando vendas...
               </div>
             )}
-            {winners.map((w: any, i: number) => {
-              const card = w.card;
-              const wt   = w.winner?.winType;
-                  const wColor = wt === "full_card" ? "#ffa726" : wt === "quina" ? "#42a5f5" : wt === "quadra" ? "#ff9800" : wt === "line" ? "#66bb6a" : "#42a5f5";
-                  const wLabel = wt === "full_card" ? "BINGO!" : wt === "quina" ? "QUINA" : wt === "quadra" ? "QUADRA" : wt === "line" ? "LINHA" : "COL";
-                  return (
-                    <div key={i} style={{
-                      display:"flex", alignItems:"center", justifyContent:"space-between",
-                      padding:"5px 9px", borderBottom:"1px solid #1e90ff12",
-                      background: i%2===0 ? "rgba(26,58,126,.18)" : "transparent",
+            {cards.slice(0, 25).map((card: any) => {
+              const nums: number[] = card.cardNumbers
+                ?? (card.grid as number[][]).flat().filter((n: number) => n !== 0);
+              const hits = nums.filter(n => drawnSet.has(n));
+              const isWinner = card.status === "winner";
+              const pct = nums.length > 0 ? hits.length / nums.length : 0;
+              const barColor = pct >= 1 ? "#ffa726" : pct >= 0.33 ? "#66bb6a" : "#1e90ff";
+              return (
+                <div key={card.id} style={{
+                  padding: "6px 8px",
+                  borderBottom: "1px solid #0d1f4a",
+                  background: isWinner ? "rgba(255,167,38,.08)" : "transparent",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+                    <span style={{
+                      color: isWinner ? "#ffa726" : "#90caf9",
+                      fontWeight: 700, fontSize: 10,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      maxWidth: 120,
                     }}>
-                      <div>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#fff" }}>
-                          {card?.playerName ?? `#${card?.id}`}
-                        </div>
-                        <div style={{ fontSize:9, color:"#3a5a8a" }}>
-                          {card?.token?.slice(0,8).toUpperCase()}
-                        </div>
-                      </div>
-                      <div style={{
-                        background:wColor, color:"#fff", fontSize:9, fontWeight:700,
-                        padding:"2px 5px", borderRadius:3, textTransform:"uppercase",
-                      }}>
-                        {wLabel}
-                      </div>
-                    </div>
-                  );
+                      {card.playerName ?? `#${card.token.slice(0, 8).toUpperCase()}`}
+                    </span>
+                    <span style={{
+                      fontWeight: 900, fontSize: 10,
+                      color: hits.length >= 15 ? "#ffa726" : hits.length >= 5 ? "#66bb6a" : hits.length >= 4 ? "#ff9800" : "#3a5a8a",
+                    }}>
+                      {hits.length}/{nums.length}
+                    </span>
+                  </div>
+                  {/* Barra de progresso */}
+                  <div style={{ height: 3, background: "#0d1f4a", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct * 100}%`, background: barColor, transition: "width .4s" }} />
+                  </div>
+                  {/* Últimas bolas acertadas */}
+                  <div style={{ display: "flex", gap: 2, marginTop: 3, flexWrap: "wrap" }}>
+                    {hits.slice(-6).map((n: number) => (
+                      <div key={n} style={{
+                        width: 18, height: 18, borderRadius: "50%",
+                        background: `radial-gradient(circle at 35% 30%, ${getColGlow(n)}cc, ${getColBg(n)} 60%)`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 8, fontWeight: 900, color: "#fff",
+                      }}>{n}</div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+            {cards.length > 25 && (
+              <div style={{ textAlign: "center", color: "#3a5a8a", padding: "6px", fontSize: 10 }}>
+                +{cards.length - 25} cartelas
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── CENTRO: Bola + histórico + status ganhadores ── */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "8px 0" }}>
+
+          {/* Bola atual */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <BigBall n={current} animKey={animKey} />
+            <div style={{
+              background: "rgba(13,27,62,.9)", border: "1px solid #1e90ff33",
+              borderRadius: 10, padding: "6px 20px", textAlign: "center",
+            }}>
+              <span style={{ color: "#90caf9", fontSize: 13, fontWeight: 700 }}>
+                {drawn.length} BOLAS SORTEADAS
+              </span>
+            </div>
+          </div>
+
+          {/* Histórico de bolas */}
+          <div style={{ width: "100%" }}>
+            <p style={{ color: "#3a5a8a", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, textAlign: "center", marginBottom: 8 }}>
+              Últimas bolas
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+              {recentBalls.map((n, i) => <MiniBall key={`${n}-${i}`} n={n} size={38} />)}
+            </div>
+          </div>
+
+          {/* Status dos prêmios */}
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
+            {[
+              { winner: quadraWinner, type: "quadra",    label: "QUADRA",  prize: room?.prizeQuadra,   color: "#ff9800", bg: "rgba(255,152,0,.12)" },
+              { winner: quinaWinner,  type: "quina",     label: "QUINA",   prize: room?.prizeQuina,    color: "#42a5f5", bg: "rgba(66,165,245,.12)" },
+              { winner: bingoWinner,  type: "full_card", label: "BINGO!",  prize: room?.prizeFullCard, color: "#ffa726", bg: "rgba(255,167,38,.12)" },
+            ].map(({ winner, label, prize, color, bg }) => {
+              const name = winner?.card?.playerName ?? winner?.playerName ?? winner?.winner?.playerName;
+              return (
+                <div key={label} style={{
+                  background: winner ? bg : "rgba(13,27,62,.7)",
+                  border: `1px solid ${winner ? color + "55" : "#1e3a6a"}`,
+                  borderRadius: 10, padding: "8px 14px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{
+                      width: 10, height: 10, borderRadius: "50%",
+                      background: winner ? color : "#1e3a6a",
+                      boxShadow: winner ? `0 0 8px ${color}` : "none",
+                    }} />
+                    <span style={{ color, fontWeight: 900, fontSize: 13 }}>{label}</span>
+                    {Number(prize) > 0 && (
+                      <span style={{ color: "#90caf9", fontSize: 11 }}>{formatR$(prize)}</span>
+                    )}
+                  </div>
+                  {winner ? (
+                    <span className="win-pop" style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>
+                      🏆 {name ?? "Ganhador!"}
+                    </span>
+                  ) : (
+                    <span style={{ color: "#1e3a6a", fontSize: 11 }}>Aguardando...</span>
+                  )}
+                </div>
+              );
             })}
           </div>
         </div>
 
-        {/* ── CENTRO: Bola + histórico ── */}
-        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8 }}>
-          {/* Contador */}
-          <div style={{
-            background:"rgba(10,22,55,.88)", border:"1px solid #1e90ff2a",
-            borderRadius:10, padding:"6px 20px",
-            display:"flex", alignItems:"center", gap:10, width:"100%", justifyContent:"center",
-          }}>
-            <span style={{ fontSize:30, fontWeight:900 }}>{drawn.length}</span>
-            <span style={{ fontSize:12, color:"#90caf9", textTransform:"uppercase", letterSpacing:1 }}>
-              BOLAS SORTEADAS
-            </span>
-          </div>
-
-          {/* Bola grande */}
-          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {current ? (
-              <div key={animKey} className="ball-in" style={{
-                width:170, height:170, borderRadius:"50%",
-                background:`radial-gradient(circle at 32% 28%,${getColGlow(current)}cc,${getColColor(current)} 55%,#000c 100%)`,
-                boxShadow:`0 0 70px ${getColGlow(current)}88, 0 0 130px ${getColGlow(current)}33, inset 0 -10px 24px #0009`,
-                border:`3px solid ${getColGlow(current)}88`,
-                display:"flex", flexDirection:"column",
-                alignItems:"center", justifyContent:"center", position:"relative",
-              }}>
-                <div style={{
-                  position:"absolute", top:"14%", left:"22%",
-                  width:"28%", height:"18%", borderRadius:"50%",
-                  background:"rgba(255,255,255,.45)", filter:"blur(5px)",
-                }}/>
-                <div style={{ fontSize:18, fontWeight:900, color:"rgba(255,255,255,.85)", letterSpacing:3 }}>
-                  {getColLabel(current)}
-                </div>
-                <div style={{ fontSize:68, fontWeight:900, color:"#fff", lineHeight:1, textShadow:"0 2px 10px #000a" }}>
-                  {current}
-                </div>
-              </div>
-            ) : (
-              <div style={{
-                width:170, height:170, borderRadius:"50%",
-                background:"radial-gradient(circle at 32% 28%,#1a3a7e,#0a1e3e)",
-                border:"3px solid #1e90ff22",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                color:"#3a5a8a", fontSize:14, flexDirection:"column", gap:4,
-              }}>
-                <span style={{ fontSize:36 }}>?</span>
-                <span>Aguardando</span>
-              </div>
-            )}
-          </div>
-
-          {/* Últimas bolas */}
-          <div style={{
-            background:"rgba(10,22,55,.88)", border:"1px solid #1e90ff2a",
-            borderRadius:10, padding:"8px 10px", width:"100%",
-          }}>
-            <div style={{ fontSize:10, color:"#90caf9", textTransform:"uppercase", letterSpacing:1, textAlign:"center", marginBottom:6 }}>
-              Últimas bolas
-            </div>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center" }}>
-              {recentBalls.map((n,i) => <BingoBall key={n} n={n} size={i===0?46:38} />)}
-              {recentBalls.length === 0 && (
-                <span style={{ color:"#3a5a8a", fontSize:12 }}>Nenhuma bola sorteada</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── DIREITA: Painel B-I-N-G-O ── */}
+        {/* ── DIREITA: Painel 1-90 + mini-cartelas ── */}
         <div style={{
-          background:"rgba(10,22,55,.88)", border:"1px solid #1e90ff2a",
-          borderRadius:10, overflow:"hidden", display:"flex", flexDirection:"column",
+          background: "rgba(10,22,55,.85)", border: "1px solid #1e90ff22",
+          borderRadius: 10, padding: "10px 8px",
+          display: "flex", flexDirection: "column", gap: 8, overflow: "hidden",
         }}>
-          {/* Cabeçalho colunas */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", flexShrink:0 }}>
-            {COLS.map(col => (
-              <div key={col.label} style={{
-                background:col.color, textAlign:"center",
-                padding:"7px 0", fontSize:22, fontWeight:900,
-                color:"#fff", textShadow:"0 1px 5px #000a", letterSpacing:2,
-              }}>{col.label}</div>
+          {/* Header B-I-N-G-O */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2, marginBottom: 2 }}>
+            {COL_LABELS.map((col, i) => (
+              <div key={col} style={{
+                textAlign: "center", fontWeight: 900, fontSize: 16,
+                color: COL_COLORS[i].light,
+              }}>{col}</div>
             ))}
           </div>
 
-          {/* Grid de números */}
-          <div style={{
-            flex:1, display:"grid",
-            gridTemplateColumns:"repeat(5,1fr)",
-            gridTemplateRows:"repeat(15,1fr)",
-            gap:2, padding:4,
-          }}>
-            {COLS.flatMap((col, ci) =>
-              Array.from({ length: 15 }, (_, i) => {
-                const num   = col.min + i;
-                const isDrawn   = drawn.includes(num);
-                const isCurrent = num === current;
-                return (
-                  <div key={num} style={{
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    borderRadius:4, fontSize:13,
-                    fontWeight: isDrawn ? 900 : 400,
-                    background: isCurrent
-                      ? col.glow
-                      : isDrawn
-                        ? `${col.color}88`
-                        : "rgba(255,255,255,.04)",
-                    color: isDrawn ? "#fff" : "#2a4a7a",
-                    border: isCurrent ? `2px solid ${col.glow}` : "1px solid transparent",
-                    boxShadow: isCurrent ? `0 0 12px ${col.glow}aa` : "none",
-                    transition:"all .3s ease",
-                    aspectRatio:"1",
-                  }}>
-                    {String(num).padStart(2,"0")}
-                  </div>
-                );
-              })
-            )}
+          {/* Grid 9×10 */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+            {numberGrid.map((row, ri) => (
+              <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 2 }}>
+                {row.map((num) => {
+                  const hit = drawnSet.has(num);
+                  return (
+                    <div key={num} style={{
+                      aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: 4, fontSize: 10, fontWeight: 700,
+                      transition: "all .3s",
+                      background: hit
+                        ? `radial-gradient(circle at 35% 30%, ${getColGlow(num)}cc, ${getColBg(num)} 60%)`
+                        : "rgba(20,40,80,.6)",
+                      border: hit ? `1px solid ${getColGlow(num)}44` : "1px solid #0d1f4a",
+                      color: hit ? "#fff" : "#1e3a6a",
+                      transform: hit ? "scale(1.05)" : "scale(1)",
+                      boxShadow: hit ? `0 0 6px ${getColGlow(num)}44` : "none",
+                    }}>
+                      {num}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
+
+          {/* Mini-cartelas dos ganhadores */}
+          {(quadraWinner || quinaWinner || bingoWinner) && (
+            <div style={{ borderTop: "1px solid #1e3a6a", paddingTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ color: "#ffa726", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 2, textAlign: "center" }}>
+                Ganhadores
+              </p>
+              {[
+                { winner: quadraWinner, label: "🟠 QUADRA", color: "#ff9800" },
+                { winner: quinaWinner,  label: "🔵 QUINA",  color: "#42a5f5" },
+                { winner: bingoWinner,  label: "⭐ BINGO!",  color: "#ffa726" },
+              ].filter(({ winner }) => winner).map(({ winner, label, color }) => {
+                const winCard = findWinCard(winner);
+                if (!winCard) return null;
+                return (
+                  <WinnerMiniCard
+                    key={`${winner.cardId}-${winner.winType}`}
+                    card={winCard}
+                    drawnSet={drawnSet}
+                    label={label}
+                    labelColor={color}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── RODAPÉ: Mini-cartelas dos ganhadores ── */}
-      {winners.length > 0 && (
-        <div style={{
-          background:"rgba(10,22,55,.92)", borderTop:"1px solid #ffa72633",
-          padding:"6px 12px", display:"flex", gap:10, overflowX:"auto",
-          flexShrink:0, position:"relative", zIndex:5, alignItems:"center",
-        }}>
-          <div style={{
-            fontSize:11, color:"#ffa726", fontWeight:700,
-            textTransform:"uppercase", letterSpacing:1, flexShrink:0,
-          }}>🏆 Ganhadores</div>
-          {winners.slice(0,4).map((w: any, i: number) => {
-            const card = w.card;
-            const grid: number[][] = card?.grid ?? [];
-            const marked: number[] = card?.markedNumbers ?? drawn;
-            return (
-              <div key={i} style={{
-                background:"rgba(26,58,126,.5)", border:"1px solid #ffa72633",
-                borderRadius:8, padding:"5px 7px", flexShrink:0,
-              }}>
-                <div style={{ fontSize:10, color:"#ffa726", fontWeight:700, marginBottom:3 }}>
-                  {card?.playerName ?? `#${card?.id}`}
-                  <span style={{ marginLeft:5, color:"#aaa", fontWeight:400 }}>
-                    {w.winner?.winType === "full_card" ? "BINGO!" : w.winner?.winType === "quina" ? "QUINA" : w.winner?.winType === "quadra" ? "QUADRA" : w.winner?.winType === "line" ? "LINHA" : "COLUNA"}
-                  </span>
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:1 }}>
-                  {COLS.map((col, ci) => (
-                    <div key={col.label}>
-                      <div style={{
-                        background:col.color, color:"#fff", fontSize:8,
-                        fontWeight:900, textAlign:"center",
-                        borderRadius:"2px 2px 0 0", padding:"1px 0",
-                      }}>{col.label}</div>
-                      {(grid[ci] ?? []).map((num: number, ri: number) => {
-                        const isM = num === 0 || marked.includes(num);
-                        return (
-                          <div key={ri} style={{
-                            background: num===0 ? "#555" : isM ? col.color : "#0a1e3e",
-                            color:"#fff", fontSize:9, fontWeight:700,
-                            textAlign:"center", padding:"2px 1px",
-                            border:"1px solid #ffffff0f",
-                          }}>
-                            {num===0 ? "★" : num}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── OVERLAY BINGO ── */}
-      {showBingo && (
-        <div style={{
-          position:"fixed", inset:0, background:"rgba(0,0,0,.75)",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          zIndex:200,
-        }}>
+      {/* ── OVERLAY DE VITÓRIA ── */}
+      {showOverlay && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 50,
+            background: "rgba(0,0,10,.82)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onClick={() => setShowOverlay(false)}
+        >
           <div className="win-pop" style={{
-            background:"linear-gradient(135deg,#e65100,#ffa726)",
-            borderRadius:20, padding:"28px 56px", textAlign:"center",
-            boxShadow:"0 0 80px #ffa72699",
+            background: `linear-gradient(135deg, ${oc.bg}, #020c1e)`,
+            border: `3px solid ${oc.border}`,
+            borderRadius: 24, padding: "48px 64px",
+            textAlign: "center", maxWidth: 480,
+            boxShadow: `0 0 80px ${oc.border}66`,
           }}>
-            <div style={{ fontSize:56 }}>🎉</div>
-            <div style={{ fontSize:40, fontWeight:900, color:"#fff" }}>BINGO!</div>
-            <div style={{ fontSize:20, color:"rgba(255,255,255,.9)", marginTop:4 }}>{bingoName}</div>
-          </div>
-          {/* Confetes */}
-          <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
-            {Array.from({length:24}).map((_,i) => (
-              <div key={i} style={{
-                position:"absolute",
-                left:`${Math.random()*100}%`,
-                top:`${Math.random()*100}%`,
-                width:10, height:10, borderRadius:2,
-                background:["#ffd700","#ff4444","#44ff44","#4488ff","#ff44ff"][i%5],
-                animation:`twinkle .5s ${Math.random()*.8}s infinite alternate`,
-              }}/>
-            ))}
+            <div style={{ fontSize: 72, marginBottom: 8 }}>{oc.emoji}</div>
+            <div style={{
+              fontSize: 56, fontWeight: 900, color: oc.border,
+              textShadow: `0 0 30px ${oc.border}`,
+              letterSpacing: 4, marginBottom: 8,
+            }}>{oc.label}</div>
+            <div style={{ fontSize: 22, color: "#fff", fontWeight: 700, marginBottom: 4 }}>
+              {overlayName}
+            </div>
+            <div style={{ fontSize: 13, color: "#90caf9", marginTop: 16 }}>
+              Clique para fechar
+            </div>
           </div>
         </div>
       )}

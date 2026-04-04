@@ -145,25 +145,26 @@ describe("bingo-engine", () => {
   });
 
   describe("getColumnLabel", () => {
-    it("deve retornar B para números 1-15", () => {
+    // Bingo 1-90: B=1-18, I=19-36, N=37-54, G=55-72, O=73-90
+    it("deve retornar B para números 1-18", () => {
       expect(getColumnLabel(1)).toBe("B");
-      expect(getColumnLabel(15)).toBe("B");
+      expect(getColumnLabel(18)).toBe("B");
     });
-    it("deve retornar I para números 16-30", () => {
-      expect(getColumnLabel(16)).toBe("I");
-      expect(getColumnLabel(30)).toBe("I");
+    it("deve retornar I para números 19-36", () => {
+      expect(getColumnLabel(19)).toBe("I");
+      expect(getColumnLabel(36)).toBe("I");
     });
-    it("deve retornar N para números 31-45", () => {
-      expect(getColumnLabel(31)).toBe("N");
-      expect(getColumnLabel(45)).toBe("N");
+    it("deve retornar N para números 37-54", () => {
+      expect(getColumnLabel(37)).toBe("N");
+      expect(getColumnLabel(54)).toBe("N");
     });
-    it("deve retornar G para números 46-60", () => {
-      expect(getColumnLabel(46)).toBe("G");
-      expect(getColumnLabel(60)).toBe("G");
+    it("deve retornar G para números 55-72", () => {
+      expect(getColumnLabel(55)).toBe("G");
+      expect(getColumnLabel(72)).toBe("G");
     });
-    it("deve retornar O para números 61-75", () => {
-      expect(getColumnLabel(61)).toBe("O");
-      expect(getColumnLabel(75)).toBe("O");
+    it("deve retornar O para números 73-90", () => {
+      expect(getColumnLabel(73)).toBe("O");
+      expect(getColumnLabel(90)).toBe("O");
     });
   });
 });

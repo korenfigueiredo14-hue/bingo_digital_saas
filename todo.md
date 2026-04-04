@@ -173,3 +173,14 @@
 - [x] Atualizar tela do jogador: exibir 15 números com marcação automática
 - [x] Atualizar tela de transmissão TV: exibir os números premiados sorteados
 - [x] Atualizar impressão térmica: mostrar 15 números da cartela
+
+## Fase 15 - Tela de Transmissão TV Profissional
+- [x] Atualizar sorteio para 1 a 90 (em vez de 1 a 75)
+- [x] Expor lista de cartelas com números no getShowData
+- [x] Reformular BingoShow: fundo azul estrelado, layout de 4 zonas
+- [x] Zona esquerda: lista de cartelas com últimos números sorteados
+- [x] Zona central: bola animada grande + histórico de bolas + contador
+- [x] Zona direita: painel de números 1-90 organizado em grid
+- [x] Zona inferior: mini-cartelas dos ganhadores (Quadra/Quina/Bingo)
+- [x] Header: nome do bingo, badge AO VIVO, prêmios Quadra/Quina/Bingo
+- [x] Exibir ganhadores de cada tipo ao final do sorteio
