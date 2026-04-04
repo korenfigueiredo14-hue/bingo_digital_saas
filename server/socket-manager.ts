@@ -137,13 +137,19 @@ export async function performDraw(roomId: number, operatorId: number): Promise<{
     );
 
     if (winType) {
-      await updateCard(card.id, { status: "winner", winType });
+      // Determinar o prêmio de acordo com o tipo de vitória
+      let prizeAmount: any = room.prize;
+      if (winType === "quadra") prizeAmount = room.prizeQuadra ?? room.prize;
+      else if (winType === "quina") prizeAmount = room.prizeQuina ?? room.prize;
+      else if (winType === "full_card") prizeAmount = room.prizeFullCard ?? room.prize;
+
+      await updateCard(card.id, { status: "winner", winType: winType as any });
       await createWinner({
         roomId,
         cardId: card.id,
         operatorId,
-        winType,
-        prizeAmount: room.prize as any,
+        winType: winType as any,
+        prizeAmount,
       });
 
       const winnerData = {
@@ -151,7 +157,7 @@ export async function performDraw(roomId: number, operatorId: number): Promise<{
         cardToken: card.token,
         playerName: card.playerName,
         winType,
-        prizeAmount: room.prize,
+        prizeAmount,
       };
       newWinners.push(winnerData);
       emitWinner(roomId, winnerData);

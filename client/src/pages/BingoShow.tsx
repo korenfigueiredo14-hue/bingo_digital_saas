@@ -175,19 +175,22 @@ export default function BingoShow() {
           </div>
         </div>
 
-        {/* Financeiro */}
-        <div style={{ display:"flex", gap:8 }}>
+        {/* Prêmios */}
+        <div style={{ display:"flex", gap:6 }}>
           {[
-            { label:"Cartela",    value:`R$ ${cardPrice.toFixed(2)}`,    border:"#1e90ff44", lc:"#90caf9" },
-            { label:"Acumulado",  value:`R$ ${accumulated.toFixed(2)}`,  border:"#ffa72644", lc:"#ffa726" },
-            { label:"Prêmio Total",value:`R$ ${prize.toFixed(2)}`,       border:"#66bb6a44", lc:"#66bb6a" },
+            { label:"Cartela",      value:`R$ ${cardPrice.toFixed(2)}`,                                     border:"#1e90ff44", lc:"#90caf9" },
+            { label:"Acumulado",    value:`R$ ${accumulated.toFixed(2)}`,                                   border:"#ffa72644", lc:"#ffa726" },
+            ...(Number(room?.prizeQuadra) > 0 ? [{ label:"\u25a0 Quadra",       value:`R$ ${Number(room?.prizeQuadra).toFixed(2)}`,  border:"#ff980044", lc:"#ff9800" }] : []),
+            ...(Number(room?.prizeQuina)  > 0 ? [{ label:"\u25a0 Quina",        value:`R$ ${Number(room?.prizeQuina).toFixed(2)}`,   border:"#42a5f544", lc:"#42a5f5" }] : []),
+            ...(Number(room?.prizeFullCard) > 0 ? [{ label:"\u25a0 Cartela Cheia", value:`R$ ${Number(room?.prizeFullCard).toFixed(2)}`, border:"#66bb6a44", lc:"#66bb6a" }] : []),
+            ...(Number(room?.prizeQuadra) === 0 && Number(room?.prizeQuina) === 0 && Number(room?.prizeFullCard) === 0 ? [{ label:"Prêmio Total", value:`R$ ${prize.toFixed(2)}`, border:"#66bb6a44", lc:"#66bb6a" }] : []),
           ].map(item => (
             <div key={item.label} style={{
               background:"rgba(13,27,62,.9)", border:`1px solid ${item.border}`,
-              borderRadius:8, padding:"5px 14px", textAlign:"center", minWidth:120,
+              borderRadius:8, padding:"5px 12px", textAlign:"center", minWidth:100,
             }}>
-              <div style={{ fontSize:10, color:item.lc, textTransform:"uppercase", letterSpacing:1 }}>{item.label}</div>
-              <div style={{ fontSize:17, fontWeight:900, color:"#fff" }}>{item.value}</div>
+              <div style={{ fontSize:9, color:item.lc, textTransform:"uppercase", letterSpacing:1 }}>{item.label}</div>
+              <div style={{ fontSize:16, fontWeight:900, color:"#fff" }}>{item.value}</div>
             </div>
           ))}
         </div>
@@ -225,29 +228,30 @@ export default function BingoShow() {
             {winners.map((w: any, i: number) => {
               const card = w.card;
               const wt   = w.winner?.winType;
-              const wColor = wt === "full_card" ? "#ffa726" : wt === "line" ? "#66bb6a" : "#42a5f5";
-              return (
-                <div key={i} style={{
-                  display:"flex", alignItems:"center", justifyContent:"space-between",
-                  padding:"5px 9px", borderBottom:"1px solid #1e90ff12",
-                  background: i%2===0 ? "rgba(26,58,126,.18)" : "transparent",
-                }}>
-                  <div>
-                    <div style={{ fontSize:11, fontWeight:700, color:"#fff" }}>
-                      {card?.playerName ?? `#${card?.id}`}
+                  const wColor = wt === "full_card" ? "#ffa726" : wt === "quina" ? "#42a5f5" : wt === "quadra" ? "#ff9800" : wt === "line" ? "#66bb6a" : "#42a5f5";
+                  const wLabel = wt === "full_card" ? "BINGO!" : wt === "quina" ? "QUINA" : wt === "quadra" ? "QUADRA" : wt === "line" ? "LINHA" : "COL";
+                  return (
+                    <div key={i} style={{
+                      display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"5px 9px", borderBottom:"1px solid #1e90ff12",
+                      background: i%2===0 ? "rgba(26,58,126,.18)" : "transparent",
+                    }}>
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#fff" }}>
+                          {card?.playerName ?? `#${card?.id}`}
+                        </div>
+                        <div style={{ fontSize:9, color:"#3a5a8a" }}>
+                          {card?.token?.slice(0,8).toUpperCase()}
+                        </div>
+                      </div>
+                      <div style={{
+                        background:wColor, color:"#fff", fontSize:9, fontWeight:700,
+                        padding:"2px 5px", borderRadius:3, textTransform:"uppercase",
+                      }}>
+                        {wLabel}
+                      </div>
                     </div>
-                    <div style={{ fontSize:9, color:"#3a5a8a" }}>
-                      {card?.token?.slice(0,8).toUpperCase()}
-                    </div>
-                  </div>
-                  <div style={{
-                    background:wColor, color:"#fff", fontSize:9, fontWeight:700,
-                    padding:"2px 5px", borderRadius:3, textTransform:"uppercase",
-                  }}>
-                    {wt === "full_card" ? "BINGO!" : wt === "line" ? "LINHA" : "COL"}
-                  </div>
-                </div>
-              );
+                  );
             })}
           </div>
         </div>
@@ -396,7 +400,7 @@ export default function BingoShow() {
                 <div style={{ fontSize:10, color:"#ffa726", fontWeight:700, marginBottom:3 }}>
                   {card?.playerName ?? `#${card?.id}`}
                   <span style={{ marginLeft:5, color:"#aaa", fontWeight:400 }}>
-                    {w.winner?.winType === "full_card" ? "BINGO!" : w.winner?.winType === "line" ? "LINHA" : "COLUNA"}
+                    {w.winner?.winType === "full_card" ? "BINGO!" : w.winner?.winType === "quina" ? "QUINA" : w.winner?.winType === "quadra" ? "QUADRA" : w.winner?.winType === "line" ? "LINHA" : "COLUNA"}
                   </span>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:1 }}>

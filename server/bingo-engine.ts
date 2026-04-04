@@ -102,25 +102,51 @@ export function checkFullCard(grid: BingoGrid, drawnNumbers: Set<number>): boole
 }
 
 /**
- * Verifica todos os tipos de vitória.
+ * Conta o máximo de números marcados em qualquer linha ou coluna.
+ */
+function maxMarkedInAnyLineOrCol(grid: BingoGrid, drawn: Set<number>): number {
+  let max = 0;
+  for (let row = 0; row < 5; row++) {
+    const count = grid.filter((col) => isMarked(col[row], drawn)).length;
+    if (count > max) max = count;
+  }
+  for (const col of grid) {
+    const count = col.filter((num) => isMarked(num, drawn)).length;
+    if (count > max) max = count;
+  }
+  return max;
+}
+
+/**
+ * Verifica Quadra: 4 números marcados em qualquer linha ou coluna.
+ */
+export function checkQuadra(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  return maxMarkedInAnyLineOrCol(grid, drawnNumbers) >= 4;
+}
+
+/**
+ * Verifica Quina: linha ou coluna completamente marcada (5 números).
+ */
+export function checkQuina(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  return checkLine(grid, drawnNumbers) || checkColumn(grid, drawnNumbers);
+}
+
+/**
+ * Verifica todos os tipos de vitória em ordem de prioridade:
+ * cartela_cheia > quina > quadra
  * Retorna o tipo de vitória ou null se não houver.
  */
 export function checkWin(
   grid: BingoGrid,
   drawnNumbers: number[],
-  condition: "line" | "column" | "full_card" | "any"
-): "line" | "column" | "full_card" | null {
+  condition: "line" | "column" | "full_card" | "any" | "quadra" | "quina"
+): "full_card" | "quina" | "quadra" | "line" | "column" | null {
   const drawn = new Set(drawnNumbers);
-
-  if (condition === "full_card" || condition === "any") {
-    if (checkFullCard(grid, drawn)) return "full_card";
-  }
-  if (condition === "line" || condition === "any") {
-    if (checkLine(grid, drawn)) return "line";
-  }
-  if (condition === "column" || condition === "any") {
-    if (checkColumn(grid, drawn)) return "column";
-  }
+  if (checkFullCard(grid, drawn)) return "full_card";
+  if (checkQuina(grid, drawn)) return "quina";
+  if (checkQuadra(grid, drawn)) return "quadra";
+  if (condition === "line" && checkLine(grid, drawn)) return "line";
+  if (condition === "column" && checkColumn(grid, drawn)) return "column";
   return null;
 }
 

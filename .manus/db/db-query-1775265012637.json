@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `bingo_rooms` ADD `prizeQuadra` decimal(10,2) DEFAULT '0.00'; ALTER TABLE `bingo_rooms` ADD `prizeQuina` decimal(10,2) DEFAULT '0.00'; ALTER TABLE `bingo_rooms` ADD `prizeFullCard` decimal(10,2) DEFAULT '0.00';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user vrWyYUW2JTziLad.52c21d10e741 --database RCLeTT3ExF2cnxXYrmLXbv --execute ALTER TABLE `bingo_rooms` ADD `prizeQuadra` decimal(10,2) DEFAULT '0.00'; ALTER TABLE `bingo_rooms` ADD `prizeQuina` decimal(10,2) DEFAULT '0.00'; ALTER TABLE `bingo_rooms` ADD `prizeFullCard` decimal(10,2) DEFAULT '0.00';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2096
+}

@@ -121,7 +121,8 @@ export default function BingoOperator() {
       if (payload.winners?.length) {
         setWinners((prev) => [...prev, ...payload.winners]);
         payload.winners.forEach((w: any) => {
-          toast.success(`🏆 BINGO! ${w.playerName || `Cartela #${w.cardId}`} — ${w.winType === "full_card" ? "Cartela Cheia" : w.winType === "line" ? "Linha" : "Coluna"}`, { duration: 8000 });
+          const wtLabel = w.winType === "full_card" ? "Cartela Cheia" : w.winType === "quina" ? "Quina" : w.winType === "quadra" ? "Quadra" : w.winType === "line" ? "Linha" : "Coluna";
+          toast.success(`🏆 BINGO! ${w.playerName || `Cartela #${w.cardId}`} — ${wtLabel}`, { duration: 8000 });
           if (voiceEnabled) speak(`Bingo! Temos um ganhador!`);
         });
       }
@@ -318,7 +319,7 @@ export default function BingoOperator() {
                     <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-primary/10 text-xs">
                       <span className="font-medium text-foreground">{w.playerName || `Cartela #${w.cardId}`}</span>
                       <Badge className="bg-accent/20 text-accent text-xs">
-                        {w.winType === "full_card" ? "Cheia" : w.winType === "line" ? "Linha" : "Coluna"}
+                        {w.winType === "full_card" ? "Cheia" : w.winType === "quina" ? "Quina" : w.winType === "quadra" ? "Quadra" : w.winType === "line" ? "Linha" : "Coluna"}
                       </Badge>
                     </div>
                   ))}

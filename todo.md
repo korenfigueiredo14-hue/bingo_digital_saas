@@ -155,3 +155,10 @@
 ## Fase 12 - Salas Ilimitadas
 - [x] Remover verificação de limite de salas no backend (router rooms.create)
 - [x] Remover aviso/bloqueio de limite de salas no frontend (RoomCreate, RoomList) — sem avisos encontrados
+
+## Fase 13 - Prêmios por Condição de Vitória
+- [x] Adicionar colunas prizeQuadra, prizeQuina, prizeFullCard na tabela bingo_rooms
+- [x] Atualizar motor de bingo para detectar quadra (4 números em linha/coluna), quina (5 números linha/coluna) e cartela cheia
+- [x] Atualizar formulário de criação com campos de prêmio para cada condição
+- [x] Exibir os 3 prêmios em destaque no telão de transmissão (/show/:slug)
+- [x] Anunciar voz e overlay específico por tipo de vitória (Quadra / Quina / Bingo!)

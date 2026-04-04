@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { ArrowLeft, Dices, Ticket, Trophy, Clock } from "lucide-react";
 
-const CARD_PRICE = 0.01; // R$ 0,01 fixo por cartela
+const CARD_PRICE = 0.50; // R$ 0,50 fixo por cartela
 
 const PRESET_QUANTITIES = [50, 100, 200, 300, 500, 1000];
 
@@ -18,7 +18,9 @@ export default function RoomCreate() {
   const [form, setForm] = useState({
     name: "",
     maxCards: "100",
-    prize: "0",
+    prizeQuadra: "",
+    prizeQuina: "",
+    prizeFullCard: "",
     prizeDescription: "",
     drawIntervalSeconds: "5",
     winCondition: "any" as "line" | "column" | "full_card" | "any",
@@ -38,11 +40,18 @@ export default function RoomCreate() {
     const maxCards = parseInt(form.maxCards) || 100;
     if (maxCards < 1 || maxCards > 9999) { toast.error("Quantidade de cartelas deve ser entre 1 e 9999"); return; }
 
+    const prizeQuadra = parseFloat(form.prizeQuadra) || 0;
+    const prizeQuina = parseFloat(form.prizeQuina) || 0;
+    const prizeFullCard = parseFloat(form.prizeFullCard) || 0;
+
     createMutation.mutate({
       name: form.name.trim(),
       cardPrice: CARD_PRICE,
-      prize: parseFloat(form.prize) || 0,
+      prize: prizeFullCard, // prize legado = cartela cheia
       prizeDescription: form.prizeDescription || undefined,
+      prizeQuadra,
+      prizeQuina,
+      prizeFullCard,
       drawIntervalSeconds: parseInt(form.drawIntervalSeconds) || 5,
       maxCards,
       winCondition: form.winCondition,
@@ -137,7 +146,7 @@ export default function RoomCreate() {
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Preço por cartela</span>
-                    <span className="font-semibold text-foreground">R$ 0,01</span>
+                    <span className="font-semibold text-foreground">R$ 0,50</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total de cartelas</span>
@@ -152,32 +161,98 @@ export default function RoomCreate() {
             </CardContent>
           </Card>
 
-          {/* Prêmio */}
+          {/* Prêmios */}
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-yellow-500" /> Prêmio
+                <Trophy className="w-4 h-4 text-yellow-500" /> Prêmios por Modalidade
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="prize">Valor do Prêmio (R$)</Label>
-                <Input
-                  id="prize"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.prize}
-                  onChange={(e) => setForm({ ...form, prize: e.target.value })}
-                  className="bg-input"
-                  placeholder="0,00"
-                />
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Configure o valor de cada prêmio. Deixe em branco ou zero se não quiser oferecer aquela modalidade.
+              </p>
+
+              {/* Quadra */}
+              <div className="flex items-center gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center shrink-0">
+                  <span className="text-white font-black text-sm">4</span>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="prizeQuadra" className="text-sm font-semibold text-orange-400">
+                    Quadra — 4 números em linha/coluna
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-sm">R$</span>
+                    <Input
+                      id="prizeQuadra"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.prizeQuadra}
+                      onChange={(e) => setForm({ ...form, prizeQuadra: e.target.value })}
+                      className="bg-input h-8 text-sm"
+                      placeholder="0,00"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Quina */}
+              <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
+                  <span className="text-white font-black text-sm">5</span>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="prizeQuina" className="text-sm font-semibold text-blue-400">
+                    Quina — linha ou coluna completa
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-sm">R$</span>
+                    <Input
+                      id="prizeQuina"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.prizeQuina}
+                      onChange={(e) => setForm({ ...form, prizeQuina: e.target.value })}
+                      className="bg-input h-8 text-sm"
+                      placeholder="0,00"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Cartela Cheia */}
+              <div className="flex items-center gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <div className="w-10 h-10 rounded-lg bg-yellow-500 flex items-center justify-center shrink-0">
+                  <Trophy className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="prizeFullCard" className="text-sm font-semibold text-yellow-400">
+                    Cartela Cheia — todos os números
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-sm">R$</span>
+                    <Input
+                      id="prizeFullCard"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.prizeFullCard}
+                      onChange={(e) => setForm({ ...form, prizeFullCard: e.target.value })}
+                      className="bg-input h-8 text-sm"
+                      placeholder="0,00"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-1.5">
-                <Label htmlFor="prizeDescription">Descrição do Prêmio</Label>
+                <Label htmlFor="prizeDescription">Descrição adicional do prêmio (opcional)</Label>
                 <Input
                   id="prizeDescription"
-                  placeholder="Ex: TV 55'' + R$ 500 em dinheiro"
+                  placeholder="Ex: TV 55'' + vale-presente"
                   value={form.prizeDescription}
                   onChange={(e) => setForm({ ...form, prizeDescription: e.target.value })}
                   className="bg-input"

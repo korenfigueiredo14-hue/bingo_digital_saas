@@ -46,6 +46,9 @@ export const bingoRooms = mysqlTable("bingo_rooms", {
   drawIntervalSeconds: int("drawIntervalSeconds").default(5).notNull(),
   maxCards: int("maxCards").default(500).notNull(),
   currentBall: int("currentBall"),
+  prizeQuadra: decimal("prizeQuadra", { precision: 10, scale: 2 }).default("0.00"),
+  prizeQuina: decimal("prizeQuina", { precision: 10, scale: 2 }).default("0.00"),
+  prizeFullCard: decimal("prizeFullCard", { precision: 10, scale: 2 }).default("0.00"),
   winCondition: mysqlEnum("winCondition", ["line", "column", "full_card", "any"])
     .default("any")
     .notNull(),
@@ -75,7 +78,7 @@ export const bingoCards = mysqlTable("bingo_cards", {
   playerPhone: varchar("playerPhone", { length: 20 }),
   status: mysqlEnum("status", ["active", "winner", "cancelled"]).default("active").notNull(),
   markedNumbers: json("markedNumbers"), // números marcados
-  winType: mysqlEnum("winType", ["line", "column", "full_card"]),
+  winType: mysqlEnum("winType", ["line", "column", "full_card", "quadra", "quina"]),
   pricePaid: decimal("pricePaid", { precision: 10, scale: 2 }),
   transactionId: varchar("transactionId", { length: 128 }),
   printedAt: timestamp("printedAt"),
@@ -104,7 +107,7 @@ export const winners = mysqlTable("winners", {
   roomId: int("roomId").notNull(),
   cardId: int("cardId").notNull(),
   operatorId: int("operatorId").notNull(),
-  winType: mysqlEnum("winType", ["line", "column", "full_card"]).notNull(),
+  winType: mysqlEnum("winType", ["line", "column", "full_card", "quadra", "quina"]).notNull(),
   prizeAmount: decimal("prizeAmount", { precision: 10, scale: 2 }),
   confirmedAt: timestamp("confirmedAt").defaultNow().notNull(),
 });

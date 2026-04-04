@@ -15,6 +15,13 @@
       "when": 1775092485436,
       "tag": "0001_stormy_mindworm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1775264992849,
+      "tag": "0002_clever_patriot",
+      "breakpoints": true
     }
   ]
 }

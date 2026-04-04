@@ -57,19 +57,19 @@ describe("bingo-engine", () => {
   });
 
   describe("checkWin", () => {
-    it("deve detectar linha completa", () => {
+    it("deve detectar linha completa como quina", () => {
       const card = generateCard();
-      // Pegar todos os números da primeira linha (exceto FREE)
+      // Linha completa agora retorna 'quina' (prioridade maior que 'line')
       const firstRowNumbers = card.grid.map((col) => col[0]).filter((n) => n !== 0);
       const result = checkWin(card.grid, firstRowNumbers, "line");
-      expect(result).toBe("line");
+      expect(result).toBe("quina");
     });
 
-    it("deve detectar coluna completa", () => {
+    it("deve detectar coluna completa como quina", () => {
       const card = generateCard();
       const firstColNumbers = card.grid[0].filter((n) => n !== 0);
       const result = checkWin(card.grid, firstColNumbers, "column");
-      expect(result).toBe("column");
+      expect(result).toBe("quina");
     });
 
     it("deve detectar cartela cheia", () => {
@@ -90,6 +90,26 @@ describe("bingo-engine", () => {
       const firstRowNumbers = card.grid.map((col) => col[0]).filter((n) => n !== 0);
       const result = checkWin(card.grid, firstRowNumbers, "any");
       expect(result).not.toBeNull();
+    });
+
+    it("deve detectar quadra (4 números em linha)", () => {
+      const card = generateCard();
+      // Pegar 4 dos 5 números da primeira linha (exceto FREE)
+      const firstRowNumbers = card.grid.map((col) => col[0]).filter((n) => n !== 0);
+      const fourNumbers = firstRowNumbers.slice(0, 4);
+      const result = checkWin(card.grid, fourNumbers, "any");
+      // Quadra detectada se 4 números em linha
+      if (fourNumbers.length === 4) {
+        expect(result).toBe("quadra");
+      }
+    });
+
+    it("deve detectar quina (linha ou coluna completa)", () => {
+      const card = generateCard();
+      // Coluna completa = quina
+      const firstColNumbers = card.grid[0].filter((n) => n !== 0);
+      const result = checkWin(card.grid, firstColNumbers, "any");
+      expect(result).toBe("quina");
     });
   });
 

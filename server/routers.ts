@@ -72,6 +72,9 @@ const bingoRoomsRouter = router({
         cardPrice: z.number().min(0).default(10),
         prize: z.number().min(0).default(0),
         prizeDescription: z.string().optional(),
+        prizeQuadra: z.number().min(0).default(0),
+        prizeQuina: z.number().min(0).default(0),
+        prizeFullCard: z.number().min(0).default(0),
         drawIntervalSeconds: z.number().min(3).max(60).default(5),
         maxCards: z.number().min(1).max(9999).default(200),
         winCondition: z.enum(["line", "column", "full_card", "any"]).default("any"),
@@ -87,6 +90,9 @@ const bingoRoomsRouter = router({
         cardPrice: String(input.cardPrice) as any,
         prize: String(input.prize) as any,
         prizeDescription: input.prizeDescription,
+        prizeQuadra: String(input.prizeQuadra) as any,
+        prizeQuina: String(input.prizeQuina) as any,
+        prizeFullCard: String(input.prizeFullCard) as any,
         drawIntervalSeconds: input.drawIntervalSeconds,
         maxCards: input.maxCards,
         winCondition: input.winCondition,
@@ -105,6 +111,9 @@ const bingoRoomsRouter = router({
         cardPrice: z.number().min(0).optional(),
         prize: z.number().min(0).optional(),
         prizeDescription: z.string().optional(),
+        prizeQuadra: z.number().min(0).optional(),
+        prizeQuina: z.number().min(0).optional(),
+        prizeFullCard: z.number().min(0).optional(),
         drawIntervalSeconds: z.number().min(3).max(60).optional(),
         maxCards: z.number().min(1).max(9999).optional(),
         winCondition: z.enum(["line", "column", "full_card", "any"]).optional(),
@@ -126,6 +135,9 @@ const bingoRoomsRouter = router({
       if (data.cardPrice !== undefined) updateData.cardPrice = String(data.cardPrice);
       if (data.prize !== undefined) updateData.prize = String(data.prize);
       if (data.prizeDescription !== undefined) updateData.prizeDescription = data.prizeDescription;
+      if (data.prizeQuadra !== undefined) updateData.prizeQuadra = String(data.prizeQuadra);
+      if (data.prizeQuina !== undefined) updateData.prizeQuina = String(data.prizeQuina);
+      if (data.prizeFullCard !== undefined) updateData.prizeFullCard = String(data.prizeFullCard);
       if (data.drawIntervalSeconds !== undefined) updateData.drawIntervalSeconds = data.drawIntervalSeconds;
       if (data.maxCards !== undefined) updateData.maxCards = data.maxCards;
       if (data.winCondition !== undefined) updateData.winCondition = data.winCondition;
@@ -633,6 +645,9 @@ const publicBuyRouter = router({
         winCondition: room.winCondition,
         prize: room.prize,
         prizeDescription: room.prizeDescription,
+        prizeQuadra: room.prizeQuadra,
+        prizeQuina: room.prizeQuina,
+        prizeFullCard: room.prizeFullCard,
         drawIntervalSeconds: room.drawIntervalSeconds,
         drawnNumbers: drawn,
         winners,
