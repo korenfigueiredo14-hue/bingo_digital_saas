@@ -7,8 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Trophy, Dices, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
-const COL_LABELS = ["B", "I", "N", "G", "O"];
-const COL_COLORS = ["text-blue-400", "text-yellow-400", "text-red-400", "text-green-400", "text-purple-400"];
+function getColLabel(n: number) {
+  if (n <= 15) return "B";
+  if (n <= 30) return "I";
+  if (n <= 45) return "N";
+  if (n <= 60) return "G";
+  return "O";
+}
+
+function getColColor(n: number) {
+  if (n <= 15) return "bg-blue-600 text-white";
+  if (n <= 30) return "bg-yellow-500 text-white";
+  if (n <= 45) return "bg-red-600 text-white";
+  if (n <= 60) return "bg-green-600 text-white";
+  return "bg-purple-600 text-white";
+}
 
 export default function PlayerCard() {
   const params = useParams<{ token: string }>();
@@ -32,10 +45,8 @@ export default function PlayerCard() {
       setIsWinner(true);
     }
 
-    // Conectar WebSocket
     const socket = io(window.location.origin, { path: "/api/socket.io" });
     socketRef.current = socket;
-
     socket.emit("join_card", token);
 
     socket.on("number_drawn", (payload: { number: number; allDrawn: number[] }) => {
@@ -44,13 +55,14 @@ export default function PlayerCard() {
       setNewBall(true);
       setTimeout(() => setNewBall(false), 1500);
 
-      // Verificar se o número está na cartela
-      if (data?.card?.grid) {
-        const grid = data.card.grid as number[][];
-        const isInCard = grid.some((col) => col.includes(payload.number));
-        if (isInCard) {
-          toast.success(`🎱 ${payload.number} está na sua cartela!`, { duration: 2000 });
-        }
+      // Verificar se o número está na cartela (cardNumbers ou grid)
+      const cardNums = (data?.card as any)?.cardNumbers as number[] | null;
+      const grid = data?.card?.grid as number[][] | null;
+      const isInCard = cardNums
+        ? cardNums.includes(payload.number)
+        : grid?.some((col) => col.includes(payload.number));
+      if (isInCard) {
+        toast.success(`🎱 ${payload.number} está na sua cartela!`, { duration: 2000 });
       }
     });
 
@@ -70,9 +82,7 @@ export default function PlayerCard() {
       }
     });
 
-    return () => {
-      socket.disconnect();
-    };
+    return () => { socket.disconnect(); };
   }, [data, token]);
 
   if (isLoading) {
@@ -98,8 +108,28 @@ export default function PlayerCard() {
   }
 
   const { card, room } = data;
-  const grid = card.grid as number[][];
   const drawnSet = new Set(drawnNumbers);
+
+  // Suporte a ambos os formatos: 15 números (novo) ou grid 5x5 (legado)
+  const cardNums: number[] = ((card as any).cardNumbers as number[] | null) ??
+    (card.grid as number[][]).flat().filter((n: number) => n !== 0);
+
+  const markedCount = cardNums.filter(n => drawnSet.has(n)).length;
+  const totalNumbers = cardNums.length;
+  const progressPct = totalNumbers > 0 ? Math.round((markedCount / totalNumbers) * 100) : 0;
+
+  const winLabel = winType === "full_card" ? "Cartela Cheia!" :
+    winType === "quina" ? "QUINA! 5 números!" :
+    winType === "quadra" ? "QUADRA! 4 números!" :
+    winType === "line" ? "Linha Completa" : "Coluna Completa";
+
+  const prizeForWinType = winType === "full_card"
+    ? (room as any)?.prizeFullCard
+    : winType === "quina"
+    ? (room as any)?.prizeQuina
+    : winType === "quadra"
+    ? (room as any)?.prizeQuadra
+    : room?.prize;
 
   const STATUS_LABELS: Record<string, string> = {
     draft: "Aguardando início",
@@ -108,10 +138,6 @@ export default function PlayerCard() {
     paused: "Pausado",
     finished: "Encerrado",
   };
-
-  const markedCount = grid.flat().filter((n) => n !== 0 && drawnSet.has(n)).length;
-  const totalNumbers = grid.flat().filter((n) => n !== 0).length;
-  const progressPct = Math.round((markedCount / totalNumbers) * 100);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -128,7 +154,7 @@ export default function PlayerCard() {
             </Badge>
           </div>
           {room?.publicSlug && (
-            <Button size="sm" variant="ghost" onClick={() => window.open(`/live/${room.publicSlug}`, "_blank")}>
+            <Button size="sm" variant="ghost" onClick={() => window.open(`/show/${room.publicSlug}`, "_blank")}>
               <ExternalLink className="w-4 h-4" />
             </Button>
           )}
@@ -141,11 +167,9 @@ export default function PlayerCard() {
           <div className="p-6 rounded-xl bg-primary/20 border border-primary text-center">
             <Trophy className="w-12 h-12 text-accent mx-auto mb-3" />
             <h2 className="text-2xl font-extrabold text-foreground">BINGO!</h2>
-            <p className="text-muted-foreground mt-1">
-              {winType === "full_card" ? "Cartela Cheia" : winType === "line" ? "Linha Completa" : "Coluna Completa"}
-            </p>
-            {room?.prize && Number(room.prize) > 0 && (
-              <p className="text-accent font-bold text-lg mt-2">Prêmio: R${Number(room.prize).toFixed(2)}</p>
+            <p className="text-muted-foreground mt-1">{winLabel}</p>
+            {prizeForWinType && Number(prizeForWinType) > 0 && (
+              <p className="text-accent font-bold text-lg mt-2">Prêmio: R${Number(prizeForWinType).toFixed(2)}</p>
             )}
           </div>
         )}
@@ -156,9 +180,7 @@ export default function PlayerCard() {
             <p className="text-xs text-muted-foreground uppercase tracking-widest">Último número</p>
             <div className={`w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30 ${newBall ? "ball-pop" : ""}`}>
               <div className="text-center">
-                <div className="text-xs font-bold text-primary-foreground/70">
-                  {currentBall <= 15 ? "B" : currentBall <= 30 ? "I" : currentBall <= 45 ? "N" : currentBall <= 60 ? "G" : "O"}
-                </div>
+                <div className="text-xs font-bold text-primary-foreground/70">{getColLabel(currentBall)}</div>
                 <div className="text-2xl font-extrabold text-primary-foreground">{currentBall}</div>
               </div>
             </div>
@@ -172,55 +194,80 @@ export default function PlayerCard() {
             <span>{progressPct}%</span>
           </div>
           <div className="h-2 rounded-full bg-secondary overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${progressPct}%` }}
-            />
+            <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
+          </div>
+          {/* Indicadores de prêmio */}
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span className={markedCount >= 4 ? "text-orange-400 font-bold" : ""}>4 = Quadra</span>
+            <span className={markedCount >= 5 ? "text-blue-400 font-bold" : ""}>5 = Quina</span>
+            <span className={markedCount >= totalNumbers ? "text-green-400 font-bold" : ""}>{totalNumbers} = Bingo!</span>
           </div>
         </div>
 
-        {/* Cartela */}
+        {/* Cartela com 15 números */}
         <div className="bg-card rounded-xl border border-border/50 p-4">
           {card.playerName && (
             <p className="text-center text-sm text-muted-foreground mb-3">
               Cartela de <strong className="text-foreground">{card.playerName}</strong>
             </p>
           )}
+          <p className="text-center text-xs text-muted-foreground mb-3 uppercase tracking-widest">Seus 15 números</p>
 
-          {/* Header das colunas */}
-          <div className="grid grid-cols-5 gap-1.5 mb-1.5">
-            {COL_LABELS.map((col, ci) => (
-              <div key={col} className={`text-center font-extrabold text-base py-1 ${COL_COLORS[ci]}`}>{col}</div>
-            ))}
-          </div>
-
-          {/* Grid 5x5 */}
-          <div className="grid grid-cols-5 gap-1.5">
-            {Array.from({ length: 5 }, (_, row) =>
-              grid.map((col, ci) => {
-                const num = col[row];
-                const isFree = num === 0;
-                const isMarked = !isFree && drawnSet.has(num);
-                const isNew = num === currentBall && newBall;
-
-                return (
-                  <div
-                    key={`${ci}-${row}`}
-                    className={`
-                      aspect-square flex items-center justify-center rounded-lg text-sm font-bold transition-all duration-300
-                      ${isFree ? "bg-accent text-accent-foreground shadow-sm" : ""}
-                      ${isMarked && !isFree ? "bg-primary text-primary-foreground shadow-md shadow-primary/30" : ""}
-                      ${!isMarked && !isFree ? "bg-secondary text-secondary-foreground border border-border" : ""}
-                      ${isNew ? "ball-pop" : ""}
-                    `}
-                  >
-                    {isFree ? "★" : num}
-                  </div>
-                );
-              })
-            )}
+          {/* Grid de 15 números: 5 colunas × 3 linhas */}
+          <div className="grid grid-cols-5 gap-2">
+            {cardNums.map((num) => {
+              const isMarked = drawnSet.has(num);
+              const isNew = num === currentBall && newBall;
+              return (
+                <div
+                  key={num}
+                  className={`
+                    aspect-square flex flex-col items-center justify-center rounded-lg text-sm font-bold transition-all duration-300
+                    ${isMarked ? getColColor(num) + " shadow-md scale-105" : "bg-secondary text-secondary-foreground border border-border"}
+                    ${isNew ? "ball-pop ring-2 ring-white" : ""}
+                  `}
+                >
+                  <span className="text-[9px] opacity-70 leading-none">{getColLabel(num)}</span>
+                  <span className="leading-tight">{num}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
+
+        {/* Prêmios disponíveis */}
+        {!isWinner && (
+          <div className="grid grid-cols-3 gap-2">
+            {(room as any)?.prizeQuadra && Number((room as any).prizeQuadra) > 0 && (
+              <div className="text-center p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                <p className="text-xs text-orange-400 font-bold">Quadra</p>
+                <p className="text-sm font-bold text-foreground">R${Number((room as any).prizeQuadra).toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">4 acertos</p>
+              </div>
+            )}
+            {(room as any)?.prizeQuina && Number((room as any).prizeQuina) > 0 && (
+              <div className="text-center p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                <p className="text-xs text-blue-400 font-bold">Quina</p>
+                <p className="text-sm font-bold text-foreground">R${Number((room as any).prizeQuina).toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">5 acertos</p>
+              </div>
+            )}
+            {(room as any)?.prizeFullCard && Number((room as any).prizeFullCard) > 0 && (
+              <div className="text-center p-3 rounded-xl bg-green-500/10 border border-green-500/30">
+                <p className="text-xs text-green-400 font-bold">Bingo!</p>
+                <p className="text-sm font-bold text-foreground">R${Number((room as any).prizeFullCard).toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">{totalNumbers} acertos</p>
+              </div>
+            )}
+            {!(room as any)?.prizeQuadra && !(room as any)?.prizeQuina && !(room as any)?.prizeFullCard && room?.prize && Number(room.prize) > 0 && (
+              <div className="col-span-3 text-center p-4 rounded-xl bg-accent/10 border border-accent/20">
+                <p className="text-xs text-muted-foreground">Prêmio</p>
+                <p className="text-xl font-bold text-accent">R${Number(room.prize).toFixed(2)}</p>
+                {room.prizeDescription && <p className="text-xs text-muted-foreground mt-1">{room.prizeDescription}</p>}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Números sorteados */}
         {drawnNumbers.length > 0 && (
@@ -228,7 +275,7 @@ export default function PlayerCard() {
             <p className="text-xs text-muted-foreground mb-3 uppercase tracking-widest">Números Sorteados ({drawnNumbers.length})</p>
             <div className="flex flex-wrap gap-1.5">
               {drawnNumbers.map((n) => {
-                const inCard = grid.some((col) => col.includes(n));
+                const inCard = cardNums.includes(n);
                 return (
                   <span
                     key={n}
@@ -240,15 +287,6 @@ export default function PlayerCard() {
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* Prêmio */}
-        {room?.prize && Number(room.prize) > 0 && !isWinner && (
-          <div className="text-center p-4 rounded-xl bg-accent/10 border border-accent/20">
-            <p className="text-xs text-muted-foreground">Prêmio</p>
-            <p className="text-xl font-bold text-accent">R${Number(room.prize).toFixed(2)}</p>
-            {room.prizeDescription && <p className="text-xs text-muted-foreground mt-1">{room.prizeDescription}</p>}
           </div>
         )}
       </div>

@@ -1,10 +1,22 @@
 import crypto from "crypto";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
-export type BingoGrid = number[][]; // 5 colunas × 5 linhas, 0 = FREE
+
+/**
+ * Cartela com 15 números únicos de 1 a 75.
+ * Armazenada como array simples ordenado.
+ */
+export type BingoCard15 = number[]; // 15 números únicos, 1-75
+
+/**
+ * Mantido para compatibilidade com código legado (tela de transmissão).
+ * Novo formato usa BingoCard15.
+ */
+export type BingoGrid = number[][];
 
 export interface CardGenerationResult {
-  grid: BingoGrid;
+  numbers: BingoCard15; // 15 números únicos
+  grid: BingoGrid;      // grade legada (gerada a partir dos 15 números para compatibilidade)
   token: string;
 }
 
@@ -20,7 +32,7 @@ const COLUMN_RANGES: [number, number][] = [
 
 const COL_LABELS = ["B", "I", "N", "G", "O"];
 
-// ─── Geração de cartela ───────────────────────────────────────────────────────
+// ─── Utilitários ──────────────────────────────────────────────────────────────
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -30,21 +42,34 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
+// ─── Geração de cartela com 15 números ───────────────────────────────────────
+
 /**
- * Gera uma grade 5x5 única de bingo.
- * grid[col][row] — col 0=B, 1=I, 2=N, 3=G, 4=O
- * A posição central (N[2] = grid[2][2]) é FREE = 0
+ * Gera 15 números únicos aleatórios de 1 a 75.
+ * Os números são retornados ordenados de forma crescente.
  */
-export function generateBingoGrid(): BingoGrid {
-  const grid: BingoGrid = [];
+export function generate15Numbers(): BingoCard15 {
+  const all = Array.from({ length: 75 }, (_, i) => i + 1);
+  const shuffled = shuffleArray(all);
+  return shuffled.slice(0, 15).sort((a, b) => a - b);
+}
+
+/**
+ * Converte 15 números em uma grade 5x5 legada para compatibilidade
+ * com componentes que ainda usam BingoGrid.
+ * Distribui os números pelas colunas B-I-N-G-O de acordo com o range.
+ * Posições vazias são preenchidas com 0.
+ */
+export function numbersToGrid(numbers: BingoCard15): BingoGrid {
+  const grid: BingoGrid = [[], [], [], [], []];
   for (let col = 0; col < 5; col++) {
     const [min, max] = COLUMN_RANGES[col];
-    const pool = Array.from({ length: max - min + 1 }, (_, i) => min + i);
-    const shuffled = shuffleArray(pool);
-    grid.push(shuffled.slice(0, 5));
+    const colNums = numbers.filter(n => n >= min && n <= max);
+    // Preencher até 5 posições (com 0 para posições vazias)
+    for (let i = 0; i < 5; i++) {
+      grid[col].push(colNums[i] ?? 0);
+    }
   }
-  // Centro livre
-  grid[2][2] = 0;
   return grid;
 }
 
@@ -56,98 +81,118 @@ export function generateCardToken(): string {
 }
 
 /**
- * Gera cartela completa com token.
+ * Gera cartela completa com 15 números únicos e token.
  */
 export function generateCard(): CardGenerationResult {
+  const numbers = generate15Numbers();
   return {
-    grid: generateBingoGrid(),
+    numbers,
+    grid: numbersToGrid(numbers),
     token: generateCardToken(),
   };
 }
 
-// ─── Verificação de vitória ───────────────────────────────────────────────────
+// ─── Sorteio de números premiados ─────────────────────────────────────────────
 
 /**
- * Verifica se um número está marcado na cartela.
- * O número 0 (FREE) é sempre considerado marcado.
+ * Sorteia aleatoriamente os números que serão os prêmios do bingo.
+ * - prizeNumbers: os 15 números sorteados que definem os prêmios
+ *   (Quadra = acertar 4, Quina = acertar 5, Cartela Cheia = acertar todos os 15 da cartela)
+ *
+ * Na verdade, o prêmio é baseado em quantos números da CARTELA DO JOGADOR
+ * coincidem com os números SORTEADOS no bingo (drawn numbers).
+ * Não há um conjunto fixo de "números premiados" — o prêmio é dado
+ * quando o jogador acerta 4, 5 ou 15 números sorteados na sua cartela.
+ *
+ * Esta função sorteia os NÚMEROS ESPECIAIS da sala que serão revelados
+ * na tela de transmissão como "números da sorte" decorativos.
  */
-function isMarked(num: number, drawnNumbers: Set<number>): boolean {
-  return num === 0 || drawnNumbers.has(num);
+export function drawPrizeNumbers(count: number = 15): number[] {
+  const all = Array.from({ length: 75 }, (_, i) => i + 1);
+  return shuffleArray(all).slice(0, count).sort((a, b) => a - b);
+}
+
+// ─── Verificação de vitória (baseada em contagem de acertos) ──────────────────
+
+/**
+ * Conta quantos números da cartela do jogador foram sorteados.
+ */
+export function countMatches(cardNumbers: number[], drawnNumbers: number[]): number {
+  const drawn = new Set(drawnNumbers);
+  return cardNumbers.filter(n => drawn.has(n)).length;
 }
 
 /**
- * Verifica vitória por linha (qualquer linha completa).
+ * Verifica vitória baseada em quantos números da cartela foram sorteados.
+ * - quadra: 4 ou mais acertos
+ * - quina: 5 ou mais acertos
+ * - full_card: todos os 15 acertos
+ *
+ * Prioridade: full_card > quina > quadra
  */
-export function checkLine(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
-  for (let row = 0; row < 5; row++) {
-    if (grid.every((col) => isMarked(col[row], drawnNumbers))) {
-      return true;
-    }
-  }
-  return false;
+export function checkWinByCount(
+  cardNumbers: number[],
+  drawnNumbers: number[]
+): "full_card" | "quina" | "quadra" | null {
+  const matches = countMatches(cardNumbers, drawnNumbers);
+  const total = cardNumbers.length;
+  if (matches >= total) return "full_card";
+  if (matches >= 5) return "quina";
+  if (matches >= 4) return "quadra";
+  return null;
+}
+
+// ─── Compatibilidade com código legado (BingoGrid) ────────────────────────────
+
+/**
+ * Extrai os números de uma BingoGrid legada (ignora zeros).
+ */
+export function gridToNumbers(grid: BingoGrid): number[] {
+  return grid.flat().filter(n => n !== 0);
 }
 
 /**
- * Verifica vitória por coluna (qualquer coluna completa).
- */
-export function checkColumn(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
-  return grid.some((col) => col.every((num) => isMarked(num, drawnNumbers)));
-}
-
-/**
- * Verifica vitória por cartela cheia.
- */
-export function checkFullCard(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
-  return grid.every((col) => col.every((num) => isMarked(num, drawnNumbers)));
-}
-
-/**
- * Conta o máximo de números marcados em qualquer linha ou coluna.
- */
-function maxMarkedInAnyLineOrCol(grid: BingoGrid, drawn: Set<number>): number {
-  let max = 0;
-  for (let row = 0; row < 5; row++) {
-    const count = grid.filter((col) => isMarked(col[row], drawn)).length;
-    if (count > max) max = count;
-  }
-  for (const col of grid) {
-    const count = col.filter((num) => isMarked(num, drawn)).length;
-    if (count > max) max = count;
-  }
-  return max;
-}
-
-/**
- * Verifica Quadra: 4 números marcados em qualquer linha ou coluna.
- */
-export function checkQuadra(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
-  return maxMarkedInAnyLineOrCol(grid, drawnNumbers) >= 4;
-}
-
-/**
- * Verifica Quina: linha ou coluna completamente marcada (5 números).
- */
-export function checkQuina(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
-  return checkLine(grid, drawnNumbers) || checkColumn(grid, drawnNumbers);
-}
-
-/**
- * Verifica todos os tipos de vitória em ordem de prioridade:
- * cartela_cheia > quina > quadra
- * Retorna o tipo de vitória ou null se não houver.
+ * Verifica vitória usando BingoGrid legada (para compatibilidade).
+ * Internamente converte para array de números e usa checkWinByCount.
  */
 export function checkWin(
   grid: BingoGrid,
   drawnNumbers: number[],
-  condition: "line" | "column" | "full_card" | "any" | "quadra" | "quina"
+  _condition?: string
 ): "full_card" | "quina" | "quadra" | "line" | "column" | null {
-  const drawn = new Set(drawnNumbers);
-  if (checkFullCard(grid, drawn)) return "full_card";
-  if (checkQuina(grid, drawn)) return "quina";
-  if (checkQuadra(grid, drawn)) return "quadra";
-  if (condition === "line" && checkLine(grid, drawn)) return "line";
-  if (condition === "column" && checkColumn(grid, drawn)) return "column";
-  return null;
+  const cardNumbers = gridToNumbers(grid);
+  return checkWinByCount(cardNumbers, drawnNumbers);
+}
+
+// ─── Funções legadas mantidas para compatibilidade ────────────────────────────
+
+function isMarked(num: number, drawnNumbers: Set<number>): boolean {
+  return num === 0 || drawnNumbers.has(num);
+}
+
+export function checkLine(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  for (let row = 0; row < 5; row++) {
+    if (grid.every((col) => isMarked(col[row], drawnNumbers))) return true;
+  }
+  return false;
+}
+
+export function checkColumn(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  return grid.some((col) => col.every((num) => isMarked(num, drawnNumbers)));
+}
+
+export function checkFullCard(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  return grid.every((col) => col.every((num) => isMarked(num, drawnNumbers)));
+}
+
+export function checkQuadra(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  const nums = gridToNumbers(grid);
+  return countMatches(nums, Array.from(drawnNumbers)) >= 4;
+}
+
+export function checkQuina(grid: BingoGrid, drawnNumbers: Set<number>): boolean {
+  const nums = gridToNumbers(grid);
+  return countMatches(nums, Array.from(drawnNumbers)) >= 5;
 }
 
 /**

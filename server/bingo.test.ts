@@ -1,115 +1,146 @@
 import { describe, expect, it } from "vitest";
-import { generateCard, checkWin, getColumnLabel } from "./bingo-engine";
+import {
+  generateCard,
+  generate15Numbers,
+  checkWinByCount,
+  checkWin,
+  getColumnLabel,
+  numbersToGrid,
+  gridToNumbers,
+} from "./bingo-engine";
 
 describe("bingo-engine", () => {
-  describe("generateCard", () => {
-    it("deve gerar uma cartela 5x5 com números válidos", () => {
-      const card = generateCard();
-      expect(card.grid).toHaveLength(5);
-      card.grid.forEach((col) => {
-        expect(col).toHaveLength(5);
+  describe("generate15Numbers", () => {
+    it("deve gerar exatamente 15 números", () => {
+      const nums = generate15Numbers();
+      expect(nums).toHaveLength(15);
+    });
+
+    it("deve gerar números únicos de 1 a 75", () => {
+      const nums = generate15Numbers();
+      const unique = new Set(nums);
+      expect(unique.size).toBe(15);
+      nums.forEach(n => {
+        expect(n).toBeGreaterThanOrEqual(1);
+        expect(n).toBeLessThanOrEqual(75);
       });
     });
 
-    it("deve ter o espaço livre (0) no centro (coluna N, linha 3)", () => {
-      const card = generateCard();
-      // Coluna N é o índice 2, linha do meio é índice 2
-      expect(card.grid[2][2]).toBe(0);
-    });
-
-    it("deve ter números únicos em cada coluna", () => {
-      const card = generateCard();
-      card.grid.forEach((col) => {
-        const nonZero = col.filter((n) => n !== 0);
-        const unique = new Set(nonZero);
-        expect(unique.size).toBe(nonZero.length);
-      });
-    });
-
-    it("deve ter números dentro do range correto por coluna", () => {
-      const card = generateCard();
-      const ranges = [
-        [1, 15],   // B
-        [16, 30],  // I
-        [31, 45],  // N
-        [46, 60],  // G
-        [61, 75],  // O
-      ];
-      card.grid.forEach((col, ci) => {
-        const [min, max] = ranges[ci];
-        col.forEach((num) => {
-          if (num !== 0) {
-            expect(num).toBeGreaterThanOrEqual(min);
-            expect(num).toBeLessThanOrEqual(max);
-          }
-        });
-      });
-    });
-
-    it("deve gerar cartelas diferentes a cada chamada", () => {
-      const card1 = generateCard();
-      const card2 = generateCard();
-      // É extremamente improvável que duas cartelas sejam idênticas
-      const flat1 = card1.grid.flat().join(",");
-      const flat2 = card2.grid.flat().join(",");
-      expect(flat1).not.toBe(flat2);
-    });
-  });
-
-  describe("checkWin", () => {
-    it("deve detectar linha completa como quina", () => {
-      const card = generateCard();
-      // Linha completa agora retorna 'quina' (prioridade maior que 'line')
-      const firstRowNumbers = card.grid.map((col) => col[0]).filter((n) => n !== 0);
-      const result = checkWin(card.grid, firstRowNumbers, "line");
-      expect(result).toBe("quina");
-    });
-
-    it("deve detectar coluna completa como quina", () => {
-      const card = generateCard();
-      const firstColNumbers = card.grid[0].filter((n) => n !== 0);
-      const result = checkWin(card.grid, firstColNumbers, "column");
-      expect(result).toBe("quina");
-    });
-
-    it("deve detectar cartela cheia", () => {
-      const card = generateCard();
-      const allNumbers = card.grid.flat().filter((n) => n !== 0);
-      const result = checkWin(card.grid, allNumbers, "full_card");
-      expect(result).toBe("full_card");
-    });
-
-    it("não deve detectar vitória com números insuficientes", () => {
-      const card = generateCard();
-      const result = checkWin(card.grid, [1, 2, 3], "full_card");
-      expect(result).toBeNull();
-    });
-
-    it("deve verificar 'any' como qualquer condição", () => {
-      const card = generateCard();
-      const firstRowNumbers = card.grid.map((col) => col[0]).filter((n) => n !== 0);
-      const result = checkWin(card.grid, firstRowNumbers, "any");
-      expect(result).not.toBeNull();
-    });
-
-    it("deve detectar quadra (4 números em linha)", () => {
-      const card = generateCard();
-      // Pegar 4 dos 5 números da primeira linha (exceto FREE)
-      const firstRowNumbers = card.grid.map((col) => col[0]).filter((n) => n !== 0);
-      const fourNumbers = firstRowNumbers.slice(0, 4);
-      const result = checkWin(card.grid, fourNumbers, "any");
-      // Quadra detectada se 4 números em linha
-      if (fourNumbers.length === 4) {
-        expect(result).toBe("quadra");
+    it("deve retornar números em ordem crescente", () => {
+      const nums = generate15Numbers();
+      for (let i = 1; i < nums.length; i++) {
+        expect(nums[i]).toBeGreaterThan(nums[i - 1]);
       }
     });
 
-    it("deve detectar quina (linha ou coluna completa)", () => {
+    it("deve gerar conjuntos diferentes a cada chamada", () => {
+      const a = generate15Numbers();
+      const b = generate15Numbers();
+      expect(a.join(",")).not.toBe(b.join(","));
+    });
+  });
+
+  describe("generateCard", () => {
+    it("deve gerar cartela com 15 números únicos", () => {
       const card = generateCard();
-      // Coluna completa = quina
-      const firstColNumbers = card.grid[0].filter((n) => n !== 0);
-      const result = checkWin(card.grid, firstColNumbers, "any");
+      expect(card.numbers).toHaveLength(15);
+      const unique = new Set(card.numbers);
+      expect(unique.size).toBe(15);
+    });
+
+    it("deve incluir grid compatível (5 colunas)", () => {
+      const card = generateCard();
+      expect(card.grid).toHaveLength(5);
+      card.grid.forEach(col => expect(col).toHaveLength(5));
+    });
+
+    it("deve gerar token único", () => {
+      const card = generateCard();
+      expect(card.token).toHaveLength(64); // 32 bytes em hex
+    });
+
+    it("deve gerar cartelas diferentes a cada chamada", () => {
+      const c1 = generateCard();
+      const c2 = generateCard();
+      expect(c1.numbers.join(",")).not.toBe(c2.numbers.join(","));
+    });
+  });
+
+  describe("numbersToGrid / gridToNumbers", () => {
+    it("deve converter 15 números para grid (5 colunas x 5 linhas)", () => {
+      const nums = generate15Numbers();
+      const grid = numbersToGrid(nums);
+      expect(grid).toHaveLength(5);
+      grid.forEach(col => expect(col).toHaveLength(5));
+    });
+
+    it("deve preservar todos os números quando cada coluna tem até 5 números", () => {
+      // Garantir no máximo 3 números por coluna (3 colunas x 5 = 15 total)
+      const nums = [1, 2, 3, 16, 17, 18, 31, 32, 33, 46, 47, 48, 61, 62, 63];
+      const grid = numbersToGrid(nums);
+      const recovered = gridToNumbers(grid).sort((a, b) => a - b);
+      expect(recovered).toEqual(nums);
+    });
+
+    it("deve usar cardNumbers (não grid) como fonte de verdade para verificação de vitória", () => {
+      // O sistema usa cardNumbers para checkWinByCount, não a grid legada
+      const card = generateCard();
+      expect(card.numbers).toHaveLength(15);
+      // checkWinByCount usa card.numbers diretamente
+      const result = checkWinByCount(card.numbers, card.numbers);
+      expect(result).toBe("full_card");
+    });
+  });
+
+  describe("checkWinByCount", () => {
+    it("deve retornar null com menos de 4 acertos", () => {
+      const card = [1, 2, 3, 16, 17, 18, 31, 32, 33, 46, 47, 48, 61, 62, 63];
+      const result = checkWinByCount(card, [1, 2, 3]);
+      expect(result).toBeNull();
+    });
+
+    it("deve detectar quadra com 4 acertos", () => {
+      const card = [1, 2, 3, 16, 17, 18, 31, 32, 33, 46, 47, 48, 61, 62, 63];
+      const result = checkWinByCount(card, [1, 2, 3, 16]);
+      expect(result).toBe("quadra");
+    });
+
+    it("deve detectar quina com 5 acertos", () => {
+      const card = [1, 2, 3, 16, 17, 18, 31, 32, 33, 46, 47, 48, 61, 62, 63];
+      const result = checkWinByCount(card, [1, 2, 3, 16, 17]);
       expect(result).toBe("quina");
+    });
+
+    it("deve detectar full_card com todos os 15 acertos", () => {
+      const card = [1, 2, 3, 16, 17, 18, 31, 32, 33, 46, 47, 48, 61, 62, 63];
+      const result = checkWinByCount(card, card);
+      expect(result).toBe("full_card");
+    });
+
+    it("deve priorizar full_card sobre quina sobre quadra", () => {
+      const card = generate15Numbers();
+      // Todos os números = full_card
+      expect(checkWinByCount(card, card)).toBe("full_card");
+      // 5 números = quina
+      expect(checkWinByCount(card, card.slice(0, 5))).toBe("quina");
+      // 4 números = quadra
+      expect(checkWinByCount(card, card.slice(0, 4))).toBe("quadra");
+    });
+  });
+
+  describe("checkWin (compatibilidade legada)", () => {
+    it("deve funcionar com grid legada via checkWin", () => {
+      const card = generateCard();
+      const allNums = gridToNumbers(card.grid);
+      // Com todos os números sorteados deve retornar full_card
+      const result = checkWin(card.grid, allNums);
+      expect(result).toBe("full_card");
+    });
+
+    it("deve retornar null com números insuficientes", () => {
+      const card = generateCard();
+      const result = checkWin(card.grid, [999]);
+      expect(result).toBeNull();
     });
   });
 

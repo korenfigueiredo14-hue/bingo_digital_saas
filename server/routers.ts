@@ -6,7 +6,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { generateCard, getColumnLabel } from "./bingo-engine";
+import { generateCard, generate15Numbers, getColumnLabel } from "./bingo-engine";
 import {
   clearDrawnNumbers,
   countCardsByRoom,
@@ -279,7 +279,7 @@ const cardsRouter = router({
 
       const generatedCards = [];
       for (let i = 0; i < input.quantity; i++) {
-        const { grid, token } = generateCard();
+        const { grid, token, numbers } = generateCard();
         const baseUrl = process.env.VITE_FRONTEND_FORGE_API_URL
           ? `https://${process.env.VITE_APP_ID}.manus.space`
           : "http://localhost:3000";
@@ -295,6 +295,7 @@ const cardsRouter = router({
           token,
           qrCodeData: cardUrl,
           grid: grid as any,
+          cardNumbers: numbers as any,
           playerName: input.playerName,
           playerPhone: input.playerPhone,
           pricePaid: room.cardPrice as any,
@@ -312,7 +313,7 @@ const cardsRouter = router({
           paymentMethod: "manual",
         });
 
-        generatedCards.push({ id: cardId, token, qrCode: qrCodeDataUrl, cardUrl, grid });
+        generatedCards.push({ id: cardId, token, qrCode: qrCodeDataUrl, cardUrl, grid, numbers });
       }
 
       return generatedCards;
@@ -336,16 +337,19 @@ const cardsRouter = router({
       if (!card) throw new TRPCError({ code: "NOT_FOUND", message: "Cartela não encontrada" });
       const room = await getRoomById(card.roomId);
       const drawn = await getDrawnNumbers(card.roomId);
+      const cardNums = card.cardNumbers as number[] | null;
       return {
         card: {
           id: card.id,
           token: card.token,
           grid: card.grid,
+          cardNumbers: cardNums,
           status: card.status,
           playerName: card.playerName,
           playerPhone: card.playerPhone,
           qrCode: card.qrCodeData ? await QRCode.toDataURL(card.qrCodeData, { width: 200, margin: 1 }) : null,
           markedNumbers: drawn.filter((n) => {
+            if (cardNums && cardNums.length > 0) return cardNums.includes(n);
             const grid = card.grid as number[][];
             return grid.some((col) => col.includes(n));
           }),
@@ -358,6 +362,9 @@ const cardsRouter = router({
               currentBall: room.currentBall,
               prize: room.prize,
               prizeDescription: room.prizeDescription,
+              prizeQuadra: room.prizeQuadra,
+              prizeQuina: room.prizeQuina,
+              prizeFullCard: room.prizeFullCard,
               publicSlug: room.publicSlug,
               cardPrice: room.cardPrice,
             }
@@ -587,7 +594,7 @@ const publicBuyRouter = router({
         : "http://localhost:3000";
 
       for (let i = 0; i < input.quantity; i++) {
-        const { grid, token } = generateCard();
+        const { grid, token, numbers } = generateCard();
         const cardUrl = `${baseUrl}/play/${token}`;
         const qrCodeDataUrl = await QRCode.toDataURL(cardUrl, {
           errorCorrectionLevel: "M",
@@ -600,6 +607,7 @@ const publicBuyRouter = router({
           token,
           qrCodeData: cardUrl,
           grid: grid as any,
+          cardNumbers: numbers as any,
           playerName: input.playerName,
           playerPhone: input.playerPhone,
           pricePaid: room.cardPrice as any,
@@ -616,7 +624,7 @@ const publicBuyRouter = router({
           paymentMethod: "public_link",
         });
 
-        generatedCards.push({ id: cardId, token, qrCode: qrCodeDataUrl, cardUrl, grid });
+        generatedCards.push({ id: cardId, token, qrCode: qrCodeDataUrl, cardUrl, grid, numbers });
       }
 
       return {

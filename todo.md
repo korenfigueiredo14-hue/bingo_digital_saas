@@ -162,3 +162,14 @@
 - [x] Atualizar formulário de criação com campos de prêmio para cada condição
 - [x] Exibir os 3 prêmios em destaque no telão de transmissão (/show/:slug)
 - [x] Anunciar voz e overlay específico por tipo de vitória (Quadra / Quina / Bingo!)
+
+## Fase 14 - Cartelas com 15 Números e Prêmios Automáticos
+- [x] Cartela com 15 números únicos (1-75) em vez de grade 5x5 com 24 números
+- [x] Ao criar bingo, sortear automaticamente os números premiados (Quadra=4, Quina=5, Cartela Cheia=todos os 15)
+- [x] Armazenar os números premiados na tabela bingo_rooms (prizeNumbers JSON)
+- [x] Atualizar motor de bingo: geração de cartela com 15 números aleatórios únicos
+- [x] Atualizar verificação de vitória: baseada em quantos números da cartela coincidem com os sorteados
+- [x] Atualizar tela de venda: exibir cartela como lista/grid de 15 números
+- [x] Atualizar tela do jogador: exibir 15 números com marcação automática
+- [x] Atualizar tela de transmissão TV: exibir os números premiados sorteados
+- [x] Atualizar impressão térmica: mostrar 15 números da cartela

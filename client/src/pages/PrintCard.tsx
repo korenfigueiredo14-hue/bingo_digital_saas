@@ -35,7 +35,17 @@ export default function PrintCard() {
   }
 
   const { card, room } = data;
-  const grid = card.grid as number[][];
+  // Suporte a ambos os formatos: 15 números (novo) ou grid 5x5 (legado)
+  const cardNums: number[] = ((card as any).cardNumbers as number[] | null) ??
+    (card.grid as number[][]).flat().filter((n: number) => n !== 0);
+
+  function getColLabelPrint(n: number) {
+    if (n <= 15) return "B";
+    if (n <= 30) return "I";
+    if (n <= 45) return "N";
+    if (n <= 60) return "G";
+    return "O";
+  }
 
   return (
     <>
@@ -69,32 +79,41 @@ export default function PrintCard() {
             {room?.cardPrice && <div>Valor: <strong>R${Number(room.cardPrice).toFixed(2)}</strong></div>}
           </div>
 
-          {/* Grid da cartela */}
-          <div className="border-2 border-black mb-3">
-            {/* Header BINGO */}
-            <div className="grid grid-cols-5 border-b-2 border-black">
-              {COL_LABELS.map((col) => (
-                <div key={col} className="text-center font-extrabold text-base py-1 border-r border-black last:border-r-0">
-                  {col}
-                </div>
-              ))}
+          {/* Prêmios */}
+          {((room as any)?.prizeQuadra || (room as any)?.prizeQuina || (room as any)?.prizeFullCard) && (
+            <div className="text-xs mb-3 border border-black p-1.5 space-y-0.5">
+              <div className="font-bold text-center border-b border-black pb-1 mb-1">PRÊMIOS</div>
+              {(room as any)?.prizeQuadra && Number((room as any).prizeQuadra) > 0 && (
+                <div>Quadra (4 acertos): <strong>R${Number((room as any).prizeQuadra).toFixed(2)}</strong></div>
+              )}
+              {(room as any)?.prizeQuina && Number((room as any).prizeQuina) > 0 && (
+                <div>Quina (5 acertos): <strong>R${Number((room as any).prizeQuina).toFixed(2)}</strong></div>
+              )}
+              {(room as any)?.prizeFullCard && Number((room as any).prizeFullCard) > 0 && (
+                <div>Bingo! ({cardNums.length} acertos): <strong>R${Number((room as any).prizeFullCard).toFixed(2)}</strong></div>
+              )}
             </div>
+          )}
 
-            {/* Números */}
-            {Array.from({ length: 5 }, (_, row) => (
+          {/* Cartela com 15 números */}
+          <div className="border-2 border-black mb-3">
+            <div className="text-center font-extrabold text-xs py-1 border-b-2 border-black bg-gray-100">
+              SEUS {cardNums.length} NÚMEROS
+            </div>
+            {/* Grid 5 colunas × 3 linhas */}
+            {Array.from({ length: Math.ceil(cardNums.length / 5) }, (_, row) => (
               <div key={row} className="grid grid-cols-5 border-b border-black last:border-b-0">
-                {grid.map((col, ci) => {
-                  const num = col[row];
-                  const isFree = num === 0;
-                  return (
-                    <div
-                      key={ci}
-                      className={`text-center py-1.5 text-sm font-bold border-r border-black last:border-r-0 ${isFree ? "bg-gray-200" : ""}`}
-                    >
-                      {isFree ? "★" : num}
-                    </div>
-                  );
-                })}
+                {cardNums.slice(row * 5, row * 5 + 5).map((num, ci) => (
+                  <div key={ci} className="text-center py-1.5 text-sm font-bold border-r border-black last:border-r-0">
+                    <div className="text-xs text-gray-500 leading-none">{getColLabelPrint(num)}</div>
+                    <div>{num}</div>
+                  </div>
+                ))}
+                {/* Preencher células vazias na última linha */}
+                {row === Math.ceil(cardNums.length / 5) - 1 &&
+                  Array.from({ length: 5 - (cardNums.length % 5 || 5) }, (_, i) => (
+                    <div key={`empty-${i}`} className="border-r border-black last:border-r-0" />
+                  ))}
               </div>
             ))}
           </div>

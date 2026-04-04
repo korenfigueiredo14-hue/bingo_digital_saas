@@ -11,7 +11,7 @@ import {
   updateCard,
   updateRoom,
 } from "./db";
-import { BingoGrid, checkWin, drawNextNumber } from "./bingo-engine";
+import { BingoGrid, checkWin, checkWinByCount, drawNextNumber } from "./bingo-engine";
 
 let io: SocketIOServer | null = null;
 
@@ -129,12 +129,11 @@ export async function performDraw(roomId: number, operatorId: number): Promise<{
 
   for (const card of cards) {
     if (card.status === "winner") continue;
-    const grid = card.grid as BingoGrid;
-    const winType = checkWin(
-      grid,
-      updatedDrawn,
-      room.winCondition as "line" | "column" | "full_card" | "any"
-    );
+    // Usar cardNumbers (15 números) se disponível, caso contrário usar grid legada
+    const cardNums = card.cardNumbers as number[] | null;
+    const winType = cardNums && cardNums.length > 0
+      ? checkWinByCount(cardNums, updatedDrawn)
+      : checkWin(card.grid as BingoGrid, updatedDrawn, room.winCondition as any);
 
     if (winType) {
       // Determinar o prêmio de acordo com o tipo de vitória

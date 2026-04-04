@@ -72,8 +72,10 @@ export const bingoCards = mysqlTable("bingo_cards", {
   operatorId: int("operatorId").notNull(), // FK → users.id (dono da sala)
   token: varchar("token", { length: 128 }).notNull().unique(), // token criptografado
   qrCodeData: text("qrCodeData"), // URL completa para o jogador
-  // grade 5x5 serializada como JSON: [[B1,B2,B3,B4,B5],[I1,...],...]
+  // grade 5x5 serializada como JSON: [[B1,B2,B3,B4,B5],[I1,...],...] (legado)
   grid: json("grid").notNull(),
+  // 15 números únicos da cartela (novo formato)
+  cardNumbers: json("cardNumbers"),
   playerName: varchar("playerName", { length: 255 }),
   playerPhone: varchar("playerPhone", { length: 20 }),
   status: mysqlEnum("status", ["active", "winner", "cancelled"]).default("active").notNull(),

@@ -35,7 +35,16 @@ type GeneratedCard = {
   qrCode: string;
   cardUrl: string;
   grid: number[][];
+  numbers?: number[]; // 15 números únicos (novo formato)
 };
+
+function getColLabelSell(n: number) {
+  if (n <= 15) return "B";
+  if (n <= 30) return "I";
+  if (n <= 45) return "N";
+  if (n <= 60) return "G";
+  return "O";
+}
 
 /** Gera o HTML completo para impressão em nova janela — sem React no DOM */
 function buildPrintHtml(
@@ -47,20 +56,18 @@ function buildPrintHtml(
 ): string {
   const cardHtml = cards
     .map((card, idx) => {
-      const cols = ["B", "I", "N", "G", "O"];
-      const rows = Array.from({ length: 5 }, (_, row) =>
-        card.grid
-          .map((col, ci) => {
-            const num = col[row];
-            const isFree = num === 0;
-            return `<td style="border:1px solid #000;text-align:center;padding:2.5mm;font-size:13px;font-weight:bold;background:${isFree ? "#ddd" : "#fff"}">${isFree ? "★" : num}</td>`;
-          })
+      // Suporte a 15 números (novo) ou grid 5x5 (legado)
+      const cardNums: number[] = card.numbers ?? card.grid.flat().filter(n => n !== 0);
+      const numRows = Array.from({ length: Math.ceil(cardNums.length / 5) }, (_, row) =>
+        cardNums.slice(row * 5, row * 5 + 5)
+          .map(num => `<td style="border:1px solid #000;text-align:center;padding:2mm;font-size:12px;font-weight:bold">
+            <div style="font-size:7px;color:#888;line-height:1">${getColLabelSell(num)}</div><div>${num}</div></td>`)
           .join("")
       );
 
       const separator =
         idx < cards.length - 1
-          ? `<div style="border-top:1px dashed #000;margin-top:3mm;padding-top:1mm;text-align:center;font-size:8px;color:#999">✂ ─────────────────────────────</div>`
+          ? `<div style="border-top:1px dashed #000;margin-top:3mm;padding-top:1mm;text-align:center;font-size:8px;color:#999">✂ ─────────────────────────────────</div>`
           : "";
 
       return `
@@ -68,12 +75,12 @@ function buildPrintHtml(
           <div style="text-align:center;margin-bottom:3mm;border-bottom:1px dashed #000;padding-bottom:2mm">
             <div style="font-size:15px;font-weight:bold">BINGO DIGITAL</div>
             <div style="font-size:12px;font-weight:bold">${roomName}</div>
-            <div style="font-size:9px">Cartela #${idx + 1} de ${cards.length}</div>
+            <div style="font-size:9px">Cartela #${idx + 1} de ${cards.length} &mdash; ${cardNums.length} números</div>
             <div style="font-size:9px">Jogador: ${playerName}</div>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-bottom:3mm">
-            <thead><tr>${cols.map((c) => `<th style="border:1px solid #000;text-align:center;padding:1.5mm;font-size:13px;font-weight:bold;background:#000;color:#fff">${c}</th>`).join("")}</tr></thead>
-            <tbody>${rows.map((r) => `<tr>${r}</tr>`).join("")}</tbody>
+            <thead><tr><th colspan="5" style="border:1px solid #000;text-align:center;padding:1.5mm;font-size:11px;font-weight:bold;background:#000;color:#fff">SEUS NÚMEROS</th></tr></thead>
+            <tbody>${numRows.map((r) => `<tr>${r}</tr>`).join("")}</tbody>
           </table>
           <div style="display:flex;align-items:center;gap:3mm">
             ${card.qrCode ? `<img src="${card.qrCode}" alt="QR" style="width:20mm;height:20mm;flex-shrink:0"/>` : ""}
@@ -325,35 +332,20 @@ export default function SellCards() {
                     Cartela #{idx + 1} — ID: {card.token.slice(0, 8).toUpperCase()}
                   </span>
                 </div>
-                {/* Grid B-I-N-G-O */}
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-center text-xs">
-                    <thead>
-                      <tr>
-                        {["B", "I", "N", "G", "O"].map((col) => (
-                          <th key={col} className="border border-border bg-primary text-primary-foreground p-1 font-bold">
-                            {col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: 5 }, (_, row) => (
-                        <tr key={row}>
-                          {card.grid.map((colArr, ci) => {
-                            const num = colArr[row];
-                            const isFree = num === 0;
-                            return (
-                              <td key={ci} className={`border border-border p-1 font-bold ${isFree ? "bg-muted text-muted-foreground" : ""}`}>
-                                {isFree ? "★" : num}
-                              </td>
-                            );
-                          })}
-                        </tr>
+                {/* Grid de 15 números */}
+                {(() => {
+                  const nums = card.numbers ?? card.grid.flat().filter(n => n !== 0);
+                  return (
+                    <div className="grid grid-cols-5 gap-1">
+                      {nums.map((num) => (
+                        <div key={num} className="aspect-square flex flex-col items-center justify-center rounded text-xs font-bold bg-secondary border border-border">
+                          <span className="text-[8px] text-muted-foreground leading-none">{getColLabelSell(num)}</span>
+                          <span>{num}</span>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
