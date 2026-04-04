@@ -20,11 +20,12 @@ const COL_TEXT = [
   "text-blue-400", "text-yellow-400", "text-red-400", "text-green-400", "text-purple-400"
 ];
 
+// Bingo 1-90: B=1-18, I=19-36, N=37-54, G=55-72, O=73-90
 function getColIndex(num: number) {
-  if (num <= 15) return 0;
-  if (num <= 30) return 1;
-  if (num <= 45) return 2;
-  if (num <= 60) return 3;
+  if (num <= 18) return 0;
+  if (num <= 36) return 1;
+  if (num <= 54) return 2;
+  if (num <= 72) return 3;
   return 4;
 }
 
@@ -191,7 +192,7 @@ export default function BingoOperator() {
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><TicketCheck className="w-3.5 h-3.5" />{cardCount} cartelas</span>
-              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{drawnNumbers.length}/75</span>
+              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{drawnNumbers.length}/15 bolas</span>
             </div>
             <Button
               variant="ghost" size="icon"
@@ -266,7 +267,14 @@ export default function BingoOperator() {
                     <p className="text-muted-foreground text-xs text-center px-3">Aguardando...</p>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">{drawnNumbers.length} de 75 sorteados</p>
+                <p className="text-xs text-muted-foreground">{drawnNumbers.length} de 15 bolas sorteadas</p>
+                {/* Barra de progresso da rodada */}
+                <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-2 bg-primary rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min((drawnNumbers.length / 15) * 100, 100)}%` }}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -332,27 +340,24 @@ export default function BingoOperator() {
           <div className="lg:col-span-2">
             <Card className="bg-card border-border/50 h-full">
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4 text-center">Painel B-I-N-G-O</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {COL_LABELS.map((col, ci) => (
-                    <div key={col} className="space-y-1.5">
-                      {/* Header da coluna */}
-                      <div className={`${COL_COLORS[ci]} text-white text-center font-extrabold text-xl py-2 rounded-lg shadow-md`}>
-                        {col}
-                      </div>
-                      {/* Números */}
-                      {Array.from({ length: 15 }, (_, i) => {
-                        const num = ci * 15 + i + 1;
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3 text-center">Painel 1-90 ({drawnNumbers.length}/15 bolas)</p>
+                {/* Grid 9x10 para 1-90 */}
+                <div className="flex flex-col gap-1">
+                  {Array.from({ length: 9 }, (_, row) => (
+                    <div key={row} className="grid grid-cols-10 gap-1">
+                      {Array.from({ length: 10 }, (_, col) => {
+                        const num = row * 10 + col + 1;
                         const isDrawn = drawnSet.has(num);
                         const isCurrent = num === currentBall;
+                        const ci = getColIndex(num);
                         return (
                           <div
                             key={num}
                             className={`
-                              aspect-square flex items-center justify-center rounded-lg text-sm font-bold transition-all duration-300 cursor-default
+                              aspect-square flex items-center justify-center rounded text-xs font-bold transition-all duration-300 cursor-default
                               ${isCurrent ? `${COL_COLORS[ci]} text-white shadow-lg scale-110 ring-2 ring-white/40` : ""}
                               ${isDrawn && !isCurrent ? `bg-primary/25 ${COL_TEXT[ci]} border border-primary/30` : ""}
-                              ${!isDrawn ? "bg-secondary text-muted-foreground hover:bg-secondary/80" : ""}
+                              ${!isDrawn ? "bg-secondary text-muted-foreground" : ""}
                             `}
                           >
                             {num}

@@ -184,3 +184,12 @@
 - [x] Zona inferior: mini-cartelas dos ganhadores (Quadra/Quina/Bingo)
 - [x] Header: nome do bingo, badge AO VIVO, prêmios Quadra/Quina/Bingo
 - [x] Exibir ganhadores de cada tipo ao final do sorteio
+
+## Fase 16 - Rodada com 15 Bolas e Ganhadores Sequenciais
+- [x] Sortear exatamente 15 números por rodada (de 1 a 90)
+- [x] Detectar Quadra (4 acertos) primeiro — apenas 1 ganhador
+- [x] Detectar Quina (5 acertos) depois — apenas 1 ganhador
+- [x] Detectar Cartela Cheia (15 acertos) por último — apenas 1 ganhador
+- [x] Encerrar sorteio automaticamente após 15 bolas ou quando os 3 prêmios forem distribuídos
+- [x] Atualizar tela do operador para mostrar progresso dos 15 sorteios
+- [x] Atualizar tela de transmissão TV para mostrar contador de bolas restantes
