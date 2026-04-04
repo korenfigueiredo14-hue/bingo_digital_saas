@@ -143,3 +143,8 @@
 ## Fase 9 - Preço e Quantidades de Cartela
 - [x] Atualizar preço fixo de R$0,01 para R$0,50 por cartela
 - [x] Ampliar opões de quantidade na tela de venda (mais botões de seleção)
+
+## Fase 10 - Correção de Impressão
+- [x] Corrigir erro NotFoundError ao clicar em "Pagamento Aprovado — Gerar e Imprimir"
+- [x] Impressão deve mostrar grid completo de números de cada cartela
+- [x] QR Code na impressão deve apontar para a tela de transmissão da sala (/show/:slug)

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -19,23 +19,15 @@ import {
   Printer,
   ArrowLeft,
   Ticket,
-  Trophy,
   DollarSign,
   User,
   Phone,
+  Tv,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 
 const CARD_PRICE = 0.50;
 const CARDS_PER_PAGE = 12;
-
-const COLUMN_COLORS: Record<string, string> = {
-  B: "bg-blue-600",
-  I: "bg-red-600",
-  N: "bg-yellow-500",
-  G: "bg-green-600",
-  O: "bg-purple-600",
-};
 
 type GeneratedCard = {
   id: number;
@@ -45,122 +37,97 @@ type GeneratedCard = {
   grid: number[][];
 };
 
-function PrintableCards({
-  cards,
-  playerName,
-  roomName,
-  liveUrl,
-}: {
-  cards: GeneratedCard[];
-  playerName: string;
-  roomName: string;
-  liveUrl: string;
-}) {
-  return (
-    <div className="hidden print:block">
-      {cards.map((card, idx) => (
-        <div
-          key={card.id}
-          className="print-card"
-          style={{
-            width: "72mm",
-            padding: "4mm",
-            marginBottom: "4mm",
-            pageBreakInside: "avoid",
-            fontFamily: "monospace",
-            fontSize: "10px",
-            border: "1px solid #000",
-          }}
-        >
-          {/* Cabeçalho */}
-          <div style={{ textAlign: "center", marginBottom: "3mm", borderBottom: "1px dashed #000", paddingBottom: "2mm" }}>
-            <div style={{ fontSize: "14px", fontWeight: "bold" }}>🎰 BINGO DIGITAL</div>
-            <div style={{ fontSize: "11px", fontWeight: "bold" }}>{roomName}</div>
-            <div style={{ fontSize: "9px" }}>Cartela #{idx + 1} de {cards.length}</div>
-            <div style={{ fontSize: "9px" }}>Jogador: {playerName}</div>
-          </div>
+/** Gera o HTML completo para impressão em nova janela — sem React no DOM */
+function buildPrintHtml(
+  cards: GeneratedCard[],
+  playerName: string,
+  roomName: string,
+  showUrl: string,
+  showQrCode: string
+): string {
+  const cardHtml = cards
+    .map((card, idx) => {
+      const cols = ["B", "I", "N", "G", "O"];
+      const rows = Array.from({ length: 5 }, (_, row) =>
+        card.grid
+          .map((col, ci) => {
+            const num = col[row];
+            const isFree = num === 0;
+            return `<td style="border:1px solid #000;text-align:center;padding:2.5mm;font-size:13px;font-weight:bold;background:${isFree ? "#ddd" : "#fff"}">${isFree ? "★" : num}</td>`;
+          })
+          .join("")
+      );
 
-          {/* Grid B-I-N-G-O */}
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "3mm" }}>
-            <thead>
-              <tr>
-                {["B", "I", "N", "G", "O"].map((col) => (
-                  <th
-                    key={col}
-                    style={{
-                      border: "1px solid #000",
-                      textAlign: "center",
-                      padding: "1.5mm",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      backgroundColor: "#000",
-                      color: "#fff",
-                    }}
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 5 }, (_, row) => (
-                <tr key={row}>
-                  {card.grid.map((col, ci) => {
-                    const num = col[row];
-                    const isFree = num === 0;
-                    return (
-                      <td
-                        key={ci}
-                        style={{
-                          border: "1px solid #000",
-                          textAlign: "center",
-                          padding: "2mm",
-                          fontSize: "12px",
-                          fontWeight: "bold",
-                          backgroundColor: isFree ? "#ddd" : "#fff",
-                        }}
-                      >
-                        {isFree ? "★" : num}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
+      const separator =
+        idx < cards.length - 1
+          ? `<div style="border-top:1px dashed #000;margin-top:3mm;padding-top:1mm;text-align:center;font-size:8px;color:#999">✂ ─────────────────────────────</div>`
+          : "";
+
+      return `
+        <div style="width:72mm;padding:4mm;margin-bottom:4mm;page-break-inside:avoid;font-family:monospace;font-size:10px;border:1px solid #000">
+          <div style="text-align:center;margin-bottom:3mm;border-bottom:1px dashed #000;padding-bottom:2mm">
+            <div style="font-size:15px;font-weight:bold">BINGO DIGITAL</div>
+            <div style="font-size:12px;font-weight:bold">${roomName}</div>
+            <div style="font-size:9px">Cartela #${idx + 1} de ${cards.length}</div>
+            <div style="font-size:9px">Jogador: ${playerName}</div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:3mm">
+            <thead><tr>${cols.map((c) => `<th style="border:1px solid #000;text-align:center;padding:1.5mm;font-size:13px;font-weight:bold;background:#000;color:#fff">${c}</th>`).join("")}</tr></thead>
+            <tbody>${rows.map((r) => `<tr>${r}</tr>`).join("")}</tbody>
           </table>
-
-          {/* QR Code e rodapé */}
-          <div style={{ display: "flex", alignItems: "center", gap: "3mm" }}>
-            {card.qrCode && (
-              <img
-                src={card.qrCode}
-                alt="QR Code"
-                style={{ width: "20mm", height: "20mm" }}
-              />
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: "8px", marginBottom: "1mm" }}>
-                Escaneie para acompanhar ao vivo
-              </div>
-              <div style={{ fontSize: "7px", wordBreak: "break-all", color: "#555" }}>
-                {card.cardUrl}
-              </div>
-              <div style={{ fontSize: "8px", marginTop: "1mm", fontWeight: "bold" }}>
-                ID: {card.token.slice(0, 8).toUpperCase()}
-              </div>
+          <div style="display:flex;align-items:center;gap:3mm">
+            ${card.qrCode ? `<img src="${card.qrCode}" alt="QR" style="width:20mm;height:20mm;flex-shrink:0"/>` : ""}
+            <div style="flex:1;font-size:8px">
+              <div style="margin-bottom:1mm">Escaneie para acompanhar ao vivo</div>
+              <div style="font-size:7px;word-break:break-all;color:#555">${card.cardUrl}</div>
+              <div style="margin-top:1mm;font-weight:bold">ID: ${card.token.slice(0, 8).toUpperCase()}</div>
             </div>
           </div>
+          ${separator}
+        </div>`;
+    })
+    .join("");
 
-          {/* Separador entre cartelas */}
-          {idx < cards.length - 1 && (
-            <div style={{ borderTop: "1px dashed #000", marginTop: "3mm", paddingTop: "1mm", textAlign: "center", fontSize: "8px", color: "#999" }}>
-              ✂ ─────────────────────────────
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Cartelas - ${roomName}</title>
+  <style>
+    @page { size: 80mm auto; margin: 2mm; }
+    body { margin: 0; padding: 0; background: #fff; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  ${cardHtml}
+  <div style="width:72mm;padding:4mm;margin-top:4mm;border:1px solid #000;font-family:monospace;text-align:center">
+    <div style="font-size:11px;font-weight:bold;margin-bottom:2mm">ACOMPANHE AO VIVO NA TV</div>
+    ${showQrCode ? `<img src="${showQrCode}" alt="QR TV" style="width:28mm;height:28mm;margin:0 auto;display:block"/>` : ""}
+    <div style="font-size:8px;margin-top:2mm;word-break:break-all;color:#555">${showUrl}</div>
+    <div style="font-size:9px;margin-top:1mm">Escaneie e assista ao bingo ao vivo!</div>
+  </div>
+</body>
+</html>`;
+}
+
+function printInNewWindow(html: string) {
+  const win = window.open("", "_blank", "width=400,height=600");
+  if (!win) {
+    toast.error("Permita pop-ups para imprimir as cartelas.");
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  // Aguarda imagens carregarem antes de imprimir
+  win.onload = () => {
+    setTimeout(() => {
+      win.focus();
+      win.print();
+      win.close();
+    }, 300);
+  };
 }
 
 export default function SellCards() {
@@ -176,20 +143,39 @@ export default function SellCards() {
   const [showPayment, setShowPayment] = useState(false);
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
+  const [showQrCode, setShowQrCode] = useState<string>("");
 
   const { data: room, isLoading } = trpc.rooms.getById.useQuery({ id: roomId });
   const { data: cardsData } = trpc.cards.listByRoom.useQuery({ roomId });
 
   const generateMutation = trpc.cards.generate.useMutation({
-    onSuccess: (data) => {
-      setGeneratedCards(data as GeneratedCard[]);
+    onSuccess: async (data) => {
+      const cards = data as GeneratedCard[];
+      setGeneratedCards(cards);
       setShowPayment(false);
       setShowSuccess(true);
-      // Imprimir automaticamente após gerar
-      setTimeout(() => {
-        window.print();
-      }, 500);
+
+      // Gerar QR Code para a tela de transmissão
+      if (room?.publicSlug) {
+        const showUrl = `${window.location.origin}/show/${room.publicSlug}`;
+        try {
+          const QRCode = await import("qrcode");
+          const qr = await QRCode.toDataURL(showUrl, { width: 200, margin: 1 });
+          setShowQrCode(qr);
+
+          // Imprimir automaticamente em nova janela (sem React no DOM)
+          setTimeout(() => {
+            const html = buildPrintHtml(cards, playerName, room.name, showUrl, qr);
+            printInNewWindow(html);
+          }, 400);
+        } catch {
+          // Imprimir sem QR Code do show se falhar
+          setTimeout(() => {
+            const html = buildPrintHtml(cards, playerName, room.name, "", "");
+            printInNewWindow(html);
+          }, 400);
+        }
+      }
     },
     onError: (err) => {
       toast.error(err.message);
@@ -203,7 +189,7 @@ export default function SellCards() {
   const endNum = Math.min(startNum + CARDS_PER_PAGE - 1, available);
   const pageNumbers = Array.from({ length: Math.max(0, endNum - startNum + 1) }, (_, i) => startNum + i);
   const totalPrice = quantity * CARD_PRICE;
-  const liveUrl = room ? `${window.location.origin}/live/${room.publicSlug}` : "";
+  const showUrl = room ? `${window.location.origin}/show/${room.publicSlug}` : "";
 
   function handleSelectQuantity(n: number) {
     setQuantity(n);
@@ -230,6 +216,12 @@ export default function SellCards() {
     });
   }
 
+  function handleReprint() {
+    if (!room) return;
+    const html = buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode);
+    printInNewWindow(html);
+  }
+
   function handleNewSale() {
     setPlayerName("");
     setPlayerPhone("");
@@ -237,6 +229,7 @@ export default function SellCards() {
     setPage(0);
     setGeneratedCards([]);
     setShowSuccess(false);
+    setShowQrCode("");
   }
 
   if (isLoading) {
@@ -257,20 +250,11 @@ export default function SellCards() {
     );
   }
 
-  // Tela de sucesso / impressão
+  // ── Tela de sucesso ──────────────────────────────────────────────────────────
   if (showSuccess && generatedCards.length > 0) {
     return (
       <DashboardLayout>
-        {/* Conteúdo de impressão (oculto na tela, visível ao imprimir) */}
-        <PrintableCards
-          cards={generatedCards}
-          playerName={playerName}
-          roomName={room.name}
-          liveUrl={liveUrl}
-        />
-
-        {/* Tela de confirmação */}
-        <div className="max-w-lg space-y-5 print:hidden">
+        <div className="max-w-lg space-y-5">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate(`/rooms/${roomId}`)}>
               <ArrowLeft className="w-4 h-4 mr-1" /> Voltar à Sala
@@ -284,54 +268,76 @@ export default function SellCards() {
               <span className="font-semibold text-white">{generatedCards.length} cartela(s)</span> geradas para{" "}
               <span className="font-semibold text-white">{playerName}</span>
             </p>
-            {totalPrice > 0 && (
-              <p className="text-yellow-400 font-bold text-lg">
-                Total cobrado: R$ {totalPrice.toFixed(2)}
-              </p>
-            )}
+            <p className="text-yellow-400 font-bold text-lg">
+              Total cobrado: R$ {totalPrice.toFixed(2)}
+            </p>
           </div>
 
+          {/* Link para tela de transmissão */}
+          {room.publicSlug && (
+            <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-3">
+              <Tv className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">Tela de transmissão (TV)</p>
+                <p className="text-xs text-blue-400 truncate">{showUrl}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(showUrl, "_blank")}
+              >
+                Abrir
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-3">
-            <Button
-              className="flex-1 gap-2"
-              onClick={() => window.print()}
-            >
+            <Button className="flex-1 gap-2" onClick={handleReprint}>
               <Printer className="w-4 h-4" /> Reimprimir
             </Button>
-            <Button
-              variant="outline"
-              className="flex-1 gap-2"
-              onClick={handleNewSale}
-            >
+            <Button variant="outline" className="flex-1 gap-2" onClick={handleNewSale}>
               <Ticket className="w-4 h-4" /> Nova Venda
             </Button>
           </div>
 
-          {/* Preview das cartelas */}
+          {/* Preview das cartelas geradas */}
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground font-medium">Cartelas geradas:</p>
             {generatedCards.map((card, idx) => (
-              <div key={card.id} className="bg-card border border-border/50 rounded-xl p-4">
-                <div className="flex items-start gap-3">
-                  {card.qrCode && (
-                    <img src={card.qrCode} alt="QR" className="w-16 h-16 rounded bg-white p-1 shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm">Cartela #{idx + 1}</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">{card.token.slice(0, 12).toUpperCase()}...</p>
-                    <div className="grid grid-cols-5 gap-0.5 mt-2">
-                      {["B","I","N","G","O"].map((col, ci) => (
-                        <div key={col} className="space-y-0.5">
-                          <div className={`${COLUMN_COLORS[col]} text-white text-[9px] font-bold text-center rounded-sm py-0.5`}>{col}</div>
-                          {(card.grid[ci] ?? []).map((num, ri) => (
-                            <div key={ri} className="bg-secondary text-foreground text-[9px] text-center rounded-sm py-0.5 font-mono">
-                              {num === 0 ? "★" : num}
-                            </div>
-                          ))}
-                        </div>
+              <div key={card.id} className="bg-card border border-border/50 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Cartela #{idx + 1} — ID: {card.token.slice(0, 8).toUpperCase()}
+                  </span>
+                </div>
+                {/* Grid B-I-N-G-O */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-center text-xs">
+                    <thead>
+                      <tr>
+                        {["B", "I", "N", "G", "O"].map((col) => (
+                          <th key={col} className="border border-border bg-primary text-primary-foreground p-1 font-bold">
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: 5 }, (_, row) => (
+                        <tr key={row}>
+                          {card.grid.map((colArr, ci) => {
+                            const num = colArr[row];
+                            const isFree = num === 0;
+                            return (
+                              <td key={ci} className={`border border-border p-1 font-bold ${isFree ? "bg-muted text-muted-foreground" : ""}`}>
+                                {isFree ? "★" : num}
+                              </td>
+                            );
+                          })}
+                        </tr>
                       ))}
-                    </div>
-                  </div>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ))}
@@ -341,42 +347,34 @@ export default function SellCards() {
     );
   }
 
+  // ── Tela principal de venda ──────────────────────────────────────────────────
   return (
     <DashboardLayout>
       <div className="max-w-lg space-y-5">
-        {/* Header */}
+        {/* Cabeçalho */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/rooms/${roomId}`)}>
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
           </Button>
           <div>
             <h1 className="text-xl font-bold text-foreground">Vender Cartelas</h1>
-            <p className="text-sm text-muted-foreground">{room.name}</p>
+            <p className="text-xs text-muted-foreground">{room.name} — R$ {CARD_PRICE.toFixed(2)}/cartela</p>
           </div>
         </div>
 
-        {/* Info da sala */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* Resumo da sala */}
+        <div className="grid grid-cols-3 gap-3">
           <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Ticket className="w-3.5 h-3.5 text-primary" />
-              <span className="text-primary text-xs font-bold">CARTELA</span>
-            </div>
-            <span className="text-foreground font-black">R$ 0,01</span>
+            <p className="text-2xl font-black text-foreground">{soldCount}</p>
+            <p className="text-xs text-muted-foreground">Vendidas</p>
           </div>
           <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Trophy className="w-3.5 h-3.5 text-yellow-500" />
-              <span className="text-yellow-500 text-xs font-bold">PRÊMIO</span>
-            </div>
-            <span className="text-foreground font-black text-sm">R$ {Number(room.prize).toFixed(2)}</span>
+            <p className="text-2xl font-black text-green-400">{available}</p>
+            <p className="text-xs text-muted-foreground">Disponíveis</p>
           </div>
           <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <DollarSign className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-green-400 text-xs font-bold">RESTAM</span>
-            </div>
-            <span className="text-foreground font-black">{available}</span>
+            <p className="text-2xl font-black text-yellow-400">R$ {(soldCount * CARD_PRICE).toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Faturado</p>
           </div>
         </div>
 
@@ -537,7 +535,7 @@ export default function SellCards() {
       </Dialog>
 
       {/* Modal de pagamento na maquininha */}
-      <Dialog open={showPayment} onOpenChange={setShowPayment}>
+      <Dialog open={showPayment} onOpenChange={(open) => { if (!generateMutation.isPending) setShowPayment(open); }}>
         <DialogContent className="bg-card border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -551,7 +549,7 @@ export default function SellCards() {
               <p className="text-4xl font-black text-yellow-400">R$ {totalPrice.toFixed(2)}</p>
               <p className="text-xs text-muted-foreground mt-1">{quantity} cartela(s) × R$ 0,50</p>
             </div>
-            <div className="text-sm text-muted-foreground space-y-1">
+            <div className="text-sm text-muted-foreground space-y-1 text-left">
               <p>1. Insira o valor <strong className="text-foreground">R$ {totalPrice.toFixed(2)}</strong> na maquininha</p>
               <p>2. Aguarde o pagamento ser aprovado</p>
               <p>3. Clique em <strong className="text-foreground">"Pagamento Aprovado"</strong></p>

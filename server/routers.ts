@@ -248,7 +248,7 @@ const cardsRouter = router({
         roomId: z.number(),
         playerName: z.string().optional(),
         playerPhone: z.string().optional(),
-        quantity: z.number().min(1).max(50).default(1),
+        quantity: z.number().min(1).max(200).default(1),
       })
     )
     .mutation(async ({ ctx, input }) => {
