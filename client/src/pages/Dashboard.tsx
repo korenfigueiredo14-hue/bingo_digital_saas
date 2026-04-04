@@ -47,9 +47,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Dices,       label: "Total de Bingos",     value: dash?.totalRooms ?? 0,                              sub: `${dash?.activeRooms ?? 0} ativos` },
-            { icon: TicketCheck, label: "Cartelas Vendidas",   value: dash?.totalCards ?? 0,                              sub: "total" },
-            { icon: DollarSign,  label: "Faturamento",         value: `R$${(dash?.revenue?.total ?? 0).toFixed(2)}`,      sub: "aprovado" },
-            { icon: TrendingUp,  label: "Bingos Finalizados",  value: dash?.finishedRooms ?? 0,                           sub: "encerrados" },
+            { icon: TicketCheck, label: "Vendedores",           value: (dash as any)?.totalSellers ?? 0,                   sub: "cadastrados" },
+            { icon: DollarSign,  label: "Bingos Ativos",        value: dash?.activeRooms ?? 0,                             sub: "em andamento" },
+            { icon: TrendingUp,  label: "Total de Bingos",      value: dash?.totalRooms ?? 0,                              sub: "criados" },
           ].map((stat) => (
             <Card key={stat.label} className="bg-card border-border/50">
               <CardContent className="p-4">
@@ -141,7 +141,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-sm font-medium text-foreground">{room.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            R${Number(room.cardPrice).toFixed(2)}/cartela · Prêmio: R${Number(room.prize).toFixed(2)}
+                            R${Number(room.cardPrice).toFixed(2)}/cartela · Bingo: R${Number((room as any).prizeFullCard ?? 0).toFixed(2)}
                           </p>
                         </div>
                       </div>

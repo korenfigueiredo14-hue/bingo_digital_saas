@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   BingoCard,
@@ -114,6 +114,75 @@ export async function updateUserPasswordHash(userId: number, passwordHash: strin
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    isActive: users.isActive,
+    establishmentName: users.establishmentName,
+    establishmentPhone: users.establishmentPhone,
+    createdAt: users.createdAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(users).orderBy(users.createdAt);
+}
+
+export async function updateUserRole(userId: number, role: 'user' | 'admin' | 'seller'): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+export async function updateUserActive(userId: number, isActive: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ isActive }).where(eq(users.id, userId));
+}
+
+export async function updateUserEstablishment(userId: number, data: {
+  establishmentName?: string;
+  establishmentAddress?: string;
+  establishmentPhone?: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set(data).where(eq(users.id, userId));
+}
+
+export async function getAllActiveRooms() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(bingoRooms)
+    .where(inArray(bingoRooms.status, ['open', 'running', 'paused']))
+    .orderBy(bingoRooms.createdAt);
+}
+
+export async function getAllRoomsWithOperator() {
+  const db = await getDb();
+  if (!db) return [];
+  const rooms = await db.select({
+    id: bingoRooms.id,
+    name: bingoRooms.name,
+    status: bingoRooms.status,
+    cardPrice: bingoRooms.cardPrice,
+    prizeQuadra: bingoRooms.prizeQuadra,
+    prizeQuina: bingoRooms.prizeQuina,
+    prizeFullCard: bingoRooms.prizeFullCard,
+    publicSlug: bingoRooms.publicSlug,
+    createdAt: bingoRooms.createdAt,
+    operatorId: bingoRooms.operatorId,
+    operatorName: users.name,
+    operatorEmail: users.email,
+    establishmentName: users.establishmentName,
+  }).from(bingoRooms)
+    .leftJoin(users, eq(bingoRooms.operatorId, users.id))
+    .orderBy(bingoRooms.createdAt);
+  return rooms;
 }
 
 // ─── Bingo Rooms ──────────────────────────────────────────────────────────────

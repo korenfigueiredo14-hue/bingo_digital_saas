@@ -218,3 +218,16 @@
 - [x] Configurar vite-plugin-pwa para service worker automático
 - [x] Adicionar meta tags de PWA no index.html
 - [x] Testar instalação como app no celular
+
+## Fase 21 - Sistema de Roles Admin/Vendedor
+- [x] Atualizar enum de roles para admin/seller no banco e schema
+- [x] Adicionar campos de estabelecimento (nome, endereço, telefone) na tabela users
+- [x] Criar adminProcedure no backend para proteger rotas de admin
+- [x] Criar sellerProcedure para proteger rotas de vendedor
+- [x] Painel admin: gerenciar usuários (criar vendedor, editar role, bloquear)
+- [x] Painel admin: ver todos os bingos de todos os vendedores
+- [x] Painel vendedor: configurar dados do estabelecimento
+- [x] Painel vendedor: listar apenas bingos ativos/abertos para vender cartelas
+- [x] Painel vendedor: vender cartelas (tela SellCards restrita ao vendedor)
+- [x] Redirecionar admin para /dashboard e vendedor para /seller após login
+- [x] Bloquear acesso do vendedor a criação/operação de bingos

@@ -29,6 +29,13 @@
       "when": 1775268606366,
       "tag": "0003_free_oracle",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1775327496416,
+      "tag": "0004_true_metal_master",
+      "breakpoints": true
     }
   ]
 }

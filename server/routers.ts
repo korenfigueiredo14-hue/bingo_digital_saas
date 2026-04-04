@@ -30,6 +30,13 @@ import {
   updateCard,
   updateRoom,
   updateUserSubscription,
+  getAllUsers,
+  updateUserRole,
+  updateUserActive,
+  updateUserEstablishment,
+  getAllActiveRooms,
+  getAllRoomsWithOperator,
+  getUserById,
 } from "./db";
 import {
   emitRoomStatusChanged,
@@ -498,38 +505,202 @@ const subscriptionsRouter = router({
     }),
 });
 
+// ─── Middleware de role ───────────────────────────────────────────────────────
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito ao administrador" });
+  }
+  return next({ ctx });
+});
+
+const sellerProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "seller" && ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a vendedores" });
+  }
+  return next({ ctx });
+});
+
 // ─── Admin Router ─────────────────────────────────────────────────────────────
 const adminRouter = router({
-  dashboard: protectedProcedure.query(async ({ ctx }) => {
-    const rooms = await getRoomsByOperator(ctx.user.id);
-    const revenue = await getRevenueByOperator(ctx.user.id);
-    const activeRooms = rooms.filter((r) => ["open", "running", "paused"].includes(r.status));
-    const finishedRooms = rooms.filter((r) => r.status === "finished");
-
-    let totalCards = 0;
-    for (const room of rooms) {
-      const count = await countCardsByRoom(room.id);
-      totalCards += count;
-    }
-
+  // Dashboard do admin: visão geral de todos os usuários e bingos
+  dashboard: adminProcedure.query(async () => {
+    const allUsers = await getAllUsers();
+    const allRooms = await getAllRoomsWithOperator();
+    const sellers = allUsers.filter((u) => u.role === "seller");
+    const activeRooms = allRooms.filter((r) => ["open", "running", "paused"].includes(r.status));
     return {
-      totalRooms: rooms.length,
+      totalUsers: allUsers.length,
+      totalSellers: sellers.length,
+      totalRooms: allRooms.length,
       activeRooms: activeRooms.length,
-      finishedRooms: finishedRooms.length,
-      totalCards,
-      revenue,
-      recentRooms: rooms.slice(0, 5),
+      recentRooms: allRooms.slice(-10).reverse(),
     };
   }),
 
-  winners: protectedProcedure
-    .input(z.object({ roomId: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const room = await getRoomById(input.roomId);
-      if (!room || room.operatorId !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND" });
+  // Listar todos os usuários
+  listUsers: adminProcedure.query(async () => {
+    return getAllUsers();
+  }),
+
+  // Criar vendedor
+  createSeller: adminProcedure
+    .input(z.object({
+      name: z.string().min(2).max(100),
+      email: z.string().email(),
+      password: z.string().min(6).max(128),
+      establishmentName: z.string().optional(),
+      establishmentPhone: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const bcrypt = await import("bcryptjs");
+      const { getUserByEmail, createLocalUser } = await import("./db");
+      const existing = await getUserByEmail(input.email);
+      if (existing) throw new TRPCError({ code: "CONFLICT", message: "E-mail já cadastrado" });
+      const passwordHash = await bcrypt.hash(input.password, 12);
+      const userId = await createLocalUser({ name: input.name, email: input.email, passwordHash });
+      await updateUserRole(userId, "seller");
+      if (input.establishmentName || input.establishmentPhone) {
+        await updateUserEstablishment(userId, {
+          establishmentName: input.establishmentName,
+          establishmentPhone: input.establishmentPhone,
+        });
       }
+      return { success: true, userId };
+    }),
+
+  // Alterar role de usuário
+  setUserRole: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      role: z.enum(["user", "admin", "seller"]),
+    }))
+    .mutation(async ({ input }) => {
+      await updateUserRole(input.userId, input.role);
+      return { success: true };
+    }),
+
+  // Ativar/desativar usuário
+  setUserActive: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      isActive: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      await updateUserActive(input.userId, input.isActive);
+      return { success: true };
+    }),
+
+  // Listar todos os bingos (de todos os operadores)
+  listAllRooms: adminProcedure.query(async () => {
+    return getAllRoomsWithOperator();
+  }),
+
+  // Ver ganhadores de qualquer sala
+  winners: adminProcedure
+    .input(z.object({ roomId: z.number() }))
+    .query(async ({ input }) => {
       return getWinnersByRoom(input.roomId);
+    }),
+});
+
+// ─── Seller Router ────────────────────────────────────────────────────────────
+const sellerRouter = router({
+  // Listar bingos ativos/abertos disponíveis para venda
+  listActiveRooms: sellerProcedure.query(async () => {
+    return getAllActiveRooms();
+  }),
+
+  // Atualizar dados do estabelecimento
+  updateEstablishment: sellerProcedure
+    .input(z.object({
+      establishmentName: z.string().min(2).max(255).optional(),
+      establishmentAddress: z.string().optional(),
+      establishmentPhone: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await updateUserEstablishment(ctx.user.id, input);
+      return { success: true };
+    }),
+
+  // Dados do perfil do vendedor
+  getProfile: sellerProcedure.query(async ({ ctx }) => {
+    const user = await getUserById(ctx.user.id);
+    if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      establishmentName: user.establishmentName,
+      establishmentAddress: user.establishmentAddress,
+      establishmentPhone: user.establishmentPhone,
+      isActive: user.isActive,
+    };
+  }),
+
+  // Vender cartelas em um bingo ativo (usa a mesma lógica do rooms.generateCards)
+  generateCards: sellerProcedure
+    .input(z.object({
+      roomId: z.number(),
+      playerName: z.string().min(2).max(100),
+      playerPhone: z.string().min(8).max(20),
+      quantity: z.number().min(1).max(50),
+      paymentMethod: z.string().default("cash"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const room = await getRoomById(input.roomId);
+      if (!room) throw new TRPCError({ code: "NOT_FOUND", message: "Bingo não encontrado" });
+      if (!["open", "running"].includes(room.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Este bingo não está aceitando cartelas" });
+      }
+      const currentCount = await countCardsByRoom(room.id);
+      if (currentCount + input.quantity > room.maxCards) {
+        const available = room.maxCards - currentCount;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: available <= 0 ? "Todas as cartelas foram vendidas" : `Apenas ${available} disponível(is)`,
+        });
+      }
+      const generatedCards = [];
+      const baseUrl = process.env.VITE_APP_ID
+        ? `https://${process.env.VITE_APP_ID}.manus.space`
+        : "http://localhost:3000";
+      for (let i = 0; i < input.quantity; i++) {
+        const { grid, token, numbers } = generateCard();
+        const cardUrl = `${baseUrl}/play/${token}`;
+        const QRCode = await import("qrcode");
+        const qrCodeDataUrl = await QRCode.default.toDataURL(cardUrl, { errorCorrectionLevel: "M", width: 200 });
+        const cardId = await createCard({
+          roomId: room.id,
+          operatorId: room.operatorId,
+          token,
+          qrCodeData: cardUrl,
+          grid: grid as any,
+          cardNumbers: numbers as any,
+          playerName: input.playerName,
+          playerPhone: input.playerPhone,
+          pricePaid: room.cardPrice as any,
+          markedNumbers: [] as any,
+        });
+        await createTransaction({
+          operatorId: room.operatorId,
+          roomId: room.id,
+          cardId,
+          type: "card_sale",
+          amount: room.cardPrice as any,
+          status: "approved",
+          paymentMethod: input.paymentMethod,
+        });
+        generatedCards.push({ id: cardId, token, qrCode: qrCodeDataUrl, cardUrl, grid, numbers });
+      }
+      return {
+        success: true,
+        cards: generatedCards,
+        totalPaid: Number(room.cardPrice) * input.quantity,
+        roomName: room.name,
+        prizeQuadra: room.prizeQuadra,
+        prizeQuina: room.prizeQuina,
+        prizeFullCard: room.prizeFullCard,
+      };
     }),
 });
 
@@ -760,6 +931,7 @@ export const appRouter = router({
   transactions: transactionsRouter,
   subscriptions: subscriptionsRouter,
   admin: adminRouter,
+  seller: sellerRouter,
   publicBuy: publicBuyRouter,
 });
 

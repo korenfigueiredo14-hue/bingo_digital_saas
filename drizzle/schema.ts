@@ -17,7 +17,12 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "seller"]).default("user").notNull(),
+  // Seller establishment info
+  establishmentName: varchar("establishmentName", { length: 255 }),
+  establishmentAddress: text("establishmentAddress"),
+  establishmentPhone: varchar("establishmentPhone", { length: 20 }),
+  isActive: boolean("isActive").default(true).notNull(),
   // SaaS subscription
   subscriptionPlan: mysqlEnum("subscriptionPlan", ["free", "basic", "professional", "premium"])
     .default("free")

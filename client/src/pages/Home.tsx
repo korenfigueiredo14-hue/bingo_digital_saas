@@ -3,17 +3,24 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Home() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
     if (loading) return;
-    if (isAuthenticated) {
-      navigate("/dashboard");
-    } else {
+    if (!isAuthenticated) {
       navigate("/login");
+      return;
     }
-  }, [isAuthenticated, loading]);
+    // Redirecionar por role
+    const role = (user as any)?.role ?? "user";
+    if (role === "seller") {
+      navigate("/seller");
+    } else {
+      // admin ou user → painel principal
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, loading, user]);
 
   return (
     <div className="min-h-screen bg-[#050d1a] flex items-center justify-center">

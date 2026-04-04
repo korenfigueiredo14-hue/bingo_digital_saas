@@ -22,6 +22,8 @@ import BingoShow from "./pages/BingoShow";
 import SellCards from "./pages/SellCards";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import SellerDashboard from "./pages/SellerDashboard";
+import AdminUsers from "./pages/AdminUsers";
 
 function Router() {
   return (
@@ -49,6 +51,8 @@ function Router() {
       <Route path="/sell-old/:id" component={CardSelector} />
       <Route path="/reports" component={Reports} />
       <Route path="/subscription" component={Subscription} />
+      <Route path="/seller" component={SellerDashboard} />
+      <Route path="/admin/users" component={AdminUsers} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
