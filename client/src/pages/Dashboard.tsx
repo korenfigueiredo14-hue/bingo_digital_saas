@@ -46,10 +46,10 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: Dices,       label: "Total de Bingos",     value: dash?.totalRooms ?? 0,                              sub: `${dash?.activeRooms ?? 0} ativos` },
-            { icon: TicketCheck, label: "Vendedores",           value: (dash as any)?.totalSellers ?? 0,                   sub: "cadastrados" },
-            { icon: DollarSign,  label: "Bingos Ativos",        value: dash?.activeRooms ?? 0,                             sub: "em andamento" },
-            { icon: TrendingUp,  label: "Total de Bingos",      value: dash?.totalRooms ?? 0,                              sub: "criados" },
+            { icon: Dices,       label: "Total de Bingos",     value: dash?.totalRooms ?? 0,       sub: `${dash?.activeRooms ?? 0} ativos` },
+            { icon: TicketCheck, label: "Vendedores",           value: (dash as any)?.totalSellers ?? 0, sub: "cadastrados" },
+            { icon: DollarSign,  label: "Bingos Ativos",        value: dash?.activeRooms ?? 0,          sub: "em andamento" },
+            { icon: TrendingUp,  label: "Bingos Criados",       value: dash?.totalRooms ?? 0,           sub: "no total" },
           ].map((stat) => (
             <Card key={stat.label} className="bg-card border-border/50">
               <CardContent className="p-4">
