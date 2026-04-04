@@ -193,3 +193,14 @@
 - [x] Encerrar sorteio automaticamente após 15 bolas ou quando os 3 prêmios forem distribuídos
 - [x] Atualizar tela do operador para mostrar progresso dos 15 sorteios
 - [x] Atualizar tela de transmissão TV para mostrar contador de bolas restantes
+
+## Fase 17 - Autenticação Própria (Email/Senha)
+- [x] Adicionar coluna passwordHash na tabela users
+- [x] Criar funções hashPassword e verifyPassword com bcrypt
+- [x] Criar procedure auth.register (email, nome, senha)
+- [x] Criar procedure auth.loginLocal (email, senha) que gera JWT próprio
+- [x] Atualizar contexto de auth para aceitar sessão local
+- [x] Criar tela /login com formulário email/senha
+- [x] Criar tela /register com formulário de cadastro
+- [x] Atualizar App.tsx para redirecionar para /login em vez do OAuth Manus
+- [x] Remover botão "Entrar com Manus" da interface

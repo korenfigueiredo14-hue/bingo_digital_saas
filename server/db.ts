@@ -83,6 +83,39 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
+export async function createLocalUser(data: {
+  name: string;
+  email: string;
+  passwordHash: string;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  // Gerar openId único para usuários locais
+  const openId = `local_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  const result = await db.insert(users).values({
+    openId,
+    name: data.name,
+    email: data.email,
+    passwordHash: data.passwordHash,
+    loginMethod: "local",
+    lastSignedIn: new Date(),
+  });
+  return (result[0] as any).insertId;
+}
+
+export async function updateUserPasswordHash(userId: number, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
+
 // ─── Bingo Rooms ──────────────────────────────────────────────────────────────
 export async function createRoom(data: InsertBingoRoom): Promise<number> {
   const db = await getDb();

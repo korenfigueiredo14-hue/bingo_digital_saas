@@ -20,10 +20,16 @@ import OperatorSelect from "./pages/OperatorSelect";
 import BuyCards from "./pages/BuyCards";
 import BingoShow from "./pages/BingoShow";
 import SellCards from "./pages/SellCards";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function Router() {
   return (
     <Switch>
+      {/* Autenticação local */}
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+
       {/* Públicas */}
       <Route path="/" component={Home} />
       <Route path="/play/:token" component={PlayerCard} />

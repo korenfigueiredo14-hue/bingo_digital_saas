@@ -22,6 +22,13 @@
       "when": 1775264992849,
       "tag": "0002_clever_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1775268606366,
+      "tag": "0003_free_oracle",
+      "breakpoints": true
     }
   ]
 }
