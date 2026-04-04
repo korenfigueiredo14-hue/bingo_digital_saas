@@ -113,22 +113,52 @@ function buildPrintHtml(
 </html>`;
 }
 
-function printInNewWindow(html: string) {
-  const win = window.open("", "_blank", "width=400,height=600");
-  if (!win) {
-    toast.error("Permita pop-ups para imprimir as cartelas.");
+function printViaIframe(html: string) {
+  // Remove iframe anterior se existir
+  const existing = document.getElementById("__bingo_print_frame__");
+  if (existing) existing.remove();
+
+  const iframe = document.createElement("iframe");
+  iframe.id = "__bingo_print_frame__";
+  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden;";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) {
+    // Fallback para popup se iframe não funcionar
+    const win = window.open("", "_blank", "width=400,height=600");
+    if (!win) { toast.error("Não foi possível imprimir. Verifique as permissões do navegador."); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => { win.print(); win.close(); }, 400);
     return;
   }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-  win.onload = () => {
-    setTimeout(() => {
-      win.focus();
-      win.print();
-      win.close();
-    }, 300);
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  // Aguarda imagens e recursos carregarem antes de imprimir
+  const tryPrint = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch {
+      toast.error("Erro ao imprimir. Tente novamente.");
+    } finally {
+      // Remove o iframe após a impressão
+      setTimeout(() => iframe.remove(), 2000);
+    }
   };
+
+  if (iframe.contentDocument?.readyState === "complete") {
+    setTimeout(tryPrint, 300);
+  } else {
+    iframe.onload = () => setTimeout(tryPrint, 300);
+    // Timeout de segurança: imprime mesmo se onload não disparar
+    setTimeout(tryPrint, 1500);
+  }
 }
 
 export default function SellCards() {
@@ -169,7 +199,7 @@ export default function SellCards() {
           setShowSuccess(true);
           // Impressão depois de mais um frame (tela de sucesso já renderizou)
           setTimeout(() => {
-            printInNewWindow(
+            printViaIframe(
               buildPrintHtml(pending.cards, pending.playerName, pending.roomName, pending.showUrl, pending.showQr)
             );
           }, 200);
@@ -241,7 +271,7 @@ export default function SellCards() {
 
   const handleReprint = useCallback(() => {
     if (!room) return;
-    printInNewWindow(buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode));
+    printViaIframe(buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode));
   }, [generatedCards, playerName, room, showUrl, showQrCode]);
 
   function handleNewSale() {

@@ -231,3 +231,9 @@
 - [x] Painel vendedor: vender cartelas (tela SellCards restrita ao vendedor)
 - [x] Redirecionar admin para /dashboard e vendedor para /seller após login
 - [x] Bloquear acesso do vendedor a criação/operação de bingos
+
+## Fase 22 - Impressão Direta no POS Android
+- [x] Substituir window.print() por impressão direta sem diálogo de visualização
+- [x] Gerar página de impressão que dispara automaticamente ao abrir
+- [x] Otimizar layout para impressora térmica 58mm/80mm do POS
+- [x] Testar fluxo completo: pagamento aprovado → cartelas impressas sem travar
