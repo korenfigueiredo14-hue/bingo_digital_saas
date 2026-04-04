@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -29,13 +29,16 @@ import DashboardLayout from "@/components/DashboardLayout";
 const CARD_PRICE = 0.50;
 const CARDS_PER_PAGE = 12;
 
+// Máquina de estados para controlar o fluxo sem conflito de DOM
+type Step = "form" | "confirm" | "payment" | "success";
+
 type GeneratedCard = {
   id: number;
   token: string;
   qrCode: string;
   cardUrl: string;
   grid: number[][];
-  numbers?: number[]; // 15 números únicos (novo formato)
+  numbers?: number[];
 };
 
 function getColLabelSell(n: number) {
@@ -46,7 +49,6 @@ function getColLabelSell(n: number) {
   return "O";
 }
 
-/** Gera o HTML completo para impressão em nova janela — sem React no DOM */
 function buildPrintHtml(
   cards: GeneratedCard[],
   playerName: string,
@@ -56,7 +58,6 @@ function buildPrintHtml(
 ): string {
   const cardHtml = cards
     .map((card, idx) => {
-      // Suporte a 15 números (novo) ou grid 5x5 (legado)
       const cardNums: number[] = card.numbers ?? card.grid.flat().filter(n => n !== 0);
       const numRows = Array.from({ length: Math.ceil(cardNums.length / 5) }, (_, row) =>
         cardNums.slice(row * 5, row * 5 + 5)
@@ -127,7 +128,6 @@ function printInNewWindow(html: string) {
   win.document.open();
   win.document.write(html);
   win.document.close();
-  // Aguarda imagens carregarem antes de imprimir
   win.onload = () => {
     setTimeout(() => {
       win.focus();
@@ -142,15 +142,17 @@ export default function SellCards() {
   const roomId = parseInt(id);
   const [, navigate] = useLocation();
 
+  const [step, setStep] = useState<Step>("form");
   const [playerName, setPlayerName] = useState("");
   const [playerPhone, setPlayerPhone] = useState("");
   const [quantity, setQuantity] = useState(0);
   const [page, setPage] = useState(0);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [showQrCode, setShowQrCode] = useState<string>("");
+
+  // Guarda os dados para imprimir APÓS o Dialog fechar completamente
+  const printQueueRef = useRef<{ cards: GeneratedCard[]; playerName: string; roomName: string; showUrl: string; showQr: string } | null>(null);
+
   const { data: room, isLoading } = trpc.rooms.getById.useQuery({ id: roomId });
   const { data: cardsData } = trpc.cards.listByRoom.useQuery({ roomId });
 
@@ -159,37 +161,43 @@ export default function SellCards() {
       const cards = data as GeneratedCard[];
       setGeneratedCards(cards);
 
-      // Gerar QR Code para a tela de transmissão
-      let showUrl = "";
+      let sUrl = "";
       let qr = "";
       if (room?.publicSlug) {
-        showUrl = `${window.location.origin}/show/${room.publicSlug}`;
+        sUrl = `${window.location.origin}/show/${room.publicSlug}`;
         try {
           const QRCode = await import("qrcode");
-          qr = await QRCode.toDataURL(showUrl, { width: 200, margin: 1 });
+          qr = await QRCode.toDataURL(sUrl, { width: 200, margin: 1 });
           setShowQrCode(qr);
-        } catch {
-          // sem QR Code do show
-        }
+        } catch { /* sem QR */ }
       }
 
-      const roomName = room?.name ?? "Bingo";
+      // Salva na fila de impressão ANTES de mudar o step
+      printQueueRef.current = {
+        cards,
+        playerName,
+        roomName: room?.name ?? "Bingo",
+        showUrl: sUrl,
+        showQr: qr,
+      };
 
-      // Fecha o Dialog de pagamento primeiro, depois imprime com delay seguro
-      setShowPayment(false);
-      setShowSuccess(true);
-
-      // Aguarda o Dialog do Radix UI ser completamente desmontado antes de imprimir
-      // Usar setTimeout com delay maior para garantir que o Portal foi removido do DOM
-      setTimeout(() => {
-        const html = buildPrintHtml(cards, playerName, roomName, showUrl, qr);
-        printInNewWindow(html);
-      }, 600);
+      // Muda para "success" — o Dialog de payment vai fechar
+      // A impressão será disparada pelo onCloseAutoFocus do Dialog
+      setStep("success");
     },
     onError: (err) => {
       toast.error(err.message);
     },
   });
+
+  // Chamado pelo Radix Dialog quando a animação de fechamento termina
+  const handlePaymentDialogClosed = useCallback(() => {
+    if (printQueueRef.current) {
+      const { cards, playerName: pName, roomName, showUrl, showQr } = printQueueRef.current;
+      printQueueRef.current = null;
+      printInNewWindow(buildPrintHtml(cards, pName, roomName, showUrl, showQr));
+    }
+  }, []);
 
   const soldCount = cardsData?.length ?? 0;
   const available = (room?.maxCards ?? 0) - soldCount;
@@ -200,20 +208,11 @@ export default function SellCards() {
   const totalPrice = quantity * CARD_PRICE;
   const showUrl = room ? `${window.location.origin}/show/${room.publicSlug}` : "";
 
-  function handleSelectQuantity(n: number) {
-    setQuantity(n);
-  }
-
   function handleNext() {
     if (!playerName.trim()) { toast.error("Informe o nome do jogador"); return; }
     if (!playerPhone.trim()) { toast.error("Informe o telefone"); return; }
     if (quantity < 1) { toast.error("Selecione pelo menos 1 cartela"); return; }
-    setShowConfirm(true);
-  }
-
-  function handleGoToPayment() {
-    setShowConfirm(false);
-    setShowPayment(true);
+    setStep("confirm");
   }
 
   function handleConfirmPayment() {
@@ -227,8 +226,7 @@ export default function SellCards() {
 
   function handleReprint() {
     if (!room) return;
-    const html = buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode);
-    printInNewWindow(html);
+    printInNewWindow(buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode));
   }
 
   function handleNewSale() {
@@ -237,8 +235,8 @@ export default function SellCards() {
     setQuantity(0);
     setPage(0);
     setGeneratedCards([]);
-    setShowSuccess(false);
     setShowQrCode("");
+    setStep("form");
   }
 
   if (isLoading) {
@@ -260,7 +258,7 @@ export default function SellCards() {
   }
 
   // ── Tela de sucesso ──────────────────────────────────────────────────────────
-  if (showSuccess && generatedCards.length > 0) {
+  if (step === "success" && generatedCards.length > 0) {
     return (
       <DashboardLayout>
         <div className="max-w-lg space-y-5">
@@ -272,7 +270,7 @@ export default function SellCards() {
 
           <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-5 text-center space-y-2">
             <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto" />
-            <h2 className="text-xl font-bold text-white">Venda Realizada!</h2>
+            <h2 className="text-xl font-bold text-foreground">Venda Realizada!</h2>
             <p className="text-white/70">
               <span className="font-semibold text-white">{generatedCards.length} cartela(s)</span> geradas para{" "}
               <span className="font-semibold text-white">{playerName}</span>
@@ -282,7 +280,6 @@ export default function SellCards() {
             </p>
           </div>
 
-          {/* Link para tela de transmissão */}
           {room.publicSlug && (
             <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-3">
               <Tv className="w-5 h-5 text-blue-400 flex-shrink-0" />
@@ -290,11 +287,7 @@ export default function SellCards() {
                 <p className="text-xs text-muted-foreground">Tela de transmissão (TV)</p>
                 <p className="text-xs text-blue-400 truncate">{showUrl}</p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(showUrl, "_blank")}
-              >
+              <Button variant="outline" size="sm" onClick={() => window.open(showUrl, "_blank")}>
                 Abrir
               </Button>
             </div>
@@ -309,32 +302,28 @@ export default function SellCards() {
             </Button>
           </div>
 
-          {/* Preview das cartelas geradas */}
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground font-medium">Cartelas geradas:</p>
-            {generatedCards.map((card, idx) => (
-              <div key={card.id} className="bg-card border border-border/50 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    Cartela #{idx + 1} — ID: {card.token.slice(0, 8).toUpperCase()}
-                  </span>
+            {generatedCards.map((card, idx) => {
+              const nums = card.numbers ?? card.grid.flat().filter(n => n !== 0);
+              return (
+                <div key={card.id} className="bg-card border border-border/50 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      Cartela #{idx + 1} — ID: {card.token.slice(0, 8).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {nums.map((num) => (
+                      <div key={num} className="aspect-square flex flex-col items-center justify-center rounded text-xs font-bold bg-secondary border border-border">
+                        <span className="text-[8px] text-muted-foreground leading-none">{getColLabelSell(num)}</span>
+                        <span>{num}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {/* Grid de 15 números */}
-                {(() => {
-                  const nums = card.numbers ?? card.grid.flat().filter(n => n !== 0);
-                  return (
-                    <div className="grid grid-cols-5 gap-1">
-                      {nums.map((num) => (
-                        <div key={num} className="aspect-square flex flex-col items-center justify-center rounded text-xs font-bold bg-secondary border border-border">
-                          <span className="text-[8px] text-muted-foreground leading-none">{getColLabelSell(num)}</span>
-                          <span>{num}</span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </DashboardLayout>
@@ -345,7 +334,6 @@ export default function SellCards() {
   return (
     <DashboardLayout>
       <div className="max-w-lg space-y-5">
-        {/* Cabeçalho */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate(`/rooms/${roomId}`)}>
             <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
@@ -356,7 +344,6 @@ export default function SellCards() {
           </div>
         </div>
 
-        {/* Resumo da sala */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-card border border-border/50 rounded-xl p-3 text-center">
             <p className="text-2xl font-black text-foreground">{soldCount}</p>
@@ -372,7 +359,6 @@ export default function SellCards() {
           </div>
         </div>
 
-        {/* Dados do jogador */}
         <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
           <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
             <User className="w-4 h-4 text-primary" /> Dados do Jogador
@@ -402,7 +388,6 @@ export default function SellCards() {
           </div>
         </div>
 
-        {/* Seleção de quantidade estilo Moderninha */}
         <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
           <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
             <Ticket className="w-4 h-4 text-primary" /> Quantidade de Cartelas
@@ -422,7 +407,7 @@ export default function SellCards() {
                   return (
                     <button
                       key={n}
-                      onClick={() => handleSelectQuantity(n)}
+                      onClick={() => setQuantity(n)}
                       className={`
                         relative rounded-xl p-3 flex flex-col items-center justify-center gap-1
                         border-2 transition-all active:scale-95
@@ -446,26 +431,13 @@ export default function SellCards() {
                 })}
               </div>
 
-              {/* Paginação */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 0}
-                    onClick={() => setPage(p => p - 1)}
-                    className="gap-1"
-                  >
+                  <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)} className="gap-1">
                     <ChevronLeft className="w-4 h-4" /> Anterior
                   </Button>
                   <span className="text-muted-foreground text-xs">Pág. {page + 1}/{totalPages}</span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= totalPages - 1}
-                    onClick={() => setPage(p => p + 1)}
-                    className="gap-1"
-                  >
+                  <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)} className="gap-1">
                     Próxima <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -474,7 +446,6 @@ export default function SellCards() {
           )}
         </div>
 
-        {/* Botão de avançar */}
         {quantity > 0 && (
           <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
@@ -493,8 +464,8 @@ export default function SellCards() {
         )}
       </div>
 
-      {/* Modal de confirmação dos dados */}
-      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+      {/* Modal de confirmação */}
+      <Dialog open={step === "confirm"} onOpenChange={(open) => { if (!open) setStep("form"); }}>
         <DialogContent className="bg-card border-border text-foreground max-w-sm">
           <DialogHeader>
             <DialogTitle>Confirmar Venda</DialogTitle>
@@ -520,17 +491,23 @@ export default function SellCards() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowConfirm(false)}>Voltar</Button>
-            <Button onClick={handleGoToPayment} className="gap-2">
+            <Button variant="outline" onClick={() => setStep("form")}>Voltar</Button>
+            <Button onClick={() => setStep("payment")} className="gap-2">
               <DollarSign className="w-4 h-4" /> Ir para Pagamento
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal de pagamento na maquininha */}
-      <Dialog open={showPayment} onOpenChange={(open) => { if (!generateMutation.isPending) setShowPayment(open); }}>
-        <DialogContent className="bg-card border-border text-foreground max-w-sm">
+      {/* Modal de pagamento — onCloseAutoFocus dispara a impressão APÓS animação de saída */}
+      <Dialog
+        open={step === "payment"}
+        onOpenChange={(open) => { if (!open && !generateMutation.isPending) setStep("form"); }}
+      >
+        <DialogContent
+          className="bg-card border-border text-foreground max-w-sm"
+          onCloseAutoFocus={handlePaymentDialogClosed}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-yellow-400" />
@@ -571,7 +548,7 @@ export default function SellCards() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setShowPayment(false)}
+              onClick={() => setStep("form")}
               disabled={generateMutation.isPending}
             >
               Cancelar

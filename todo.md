@@ -208,3 +208,6 @@
 ## Fase 18 - Correções de Bugs
 - [x] Corrigir redirecionamento OAuth Manus na página inicial (Home.tsx → /login)
 - [x] Corrigir erro de DOM "insertBefore" no SellCards ao gerar e imprimir cartelas
+
+## Fase 19 - Correção Definitiva do Erro insertBefore
+- [x] Refatorar SellCards para eliminar erro de DOM ao fechar Dialog e imprimir
