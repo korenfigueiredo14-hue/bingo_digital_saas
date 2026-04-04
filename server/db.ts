@@ -184,7 +184,7 @@ export async function countCardsByRoom(roomId: number): Promise<number> {
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(bingoCards)
-    .where(and(eq(bingoCards.roomId, roomId), eq(bingoCards.status, "active")));
+    .where(eq(bingoCards.roomId, roomId));
   return result[0]?.count ?? 0;
 }
 

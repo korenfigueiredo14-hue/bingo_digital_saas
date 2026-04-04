@@ -148,3 +148,6 @@
 - [x] Corrigir erro NotFoundError ao clicar em "Pagamento Aprovado — Gerar e Imprimir"
 - [x] Impressão deve mostrar grid completo de números de cada cartela
 - [x] QR Code na impressão deve apontar para a tela de transmissão da sala (/show/:slug)
+
+## Fase 11 - Correção Definitiva do Erro de Impressão
+- [x] Corrigir definitivamente NotFoundError ao clicar em "Pagamento Aprovado — Gerar e Imprimir" (useEffect + requestAnimationFrame para aguardar Dialog fechar)

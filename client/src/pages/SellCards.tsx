@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -144,38 +144,53 @@ export default function SellCards() {
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showQrCode, setShowQrCode] = useState<string>("");
+  const pendingPrintRef = useRef<{ cards: GeneratedCard[]; showUrl: string; showQr: string } | null>(null);
 
   const { data: room, isLoading } = trpc.rooms.getById.useQuery({ id: roomId });
   const { data: cardsData } = trpc.cards.listByRoom.useQuery({ roomId });
+
+  // Dispara impressão somente após Dialog estar completamente fechado
+  useEffect(() => {
+    if (!showPayment && !showConfirm && pendingPrintRef.current) {
+      const { cards, showUrl, showQr } = pendingPrintRef.current;
+      pendingPrintRef.current = null;
+      // Aguarda 2 frames para o Radix UI terminar de desmontar o Portal
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const html = buildPrintHtml(cards, playerName, room?.name ?? "Bingo", showUrl, showQr);
+            printInNewWindow(html);
+          }, 150);
+        });
+      });
+    }
+  }, [showPayment, showConfirm]);
 
   const generateMutation = trpc.cards.generate.useMutation({
     onSuccess: async (data) => {
       const cards = data as GeneratedCard[];
       setGeneratedCards(cards);
-      setShowPayment(false);
-      setShowSuccess(true);
 
       // Gerar QR Code para a tela de transmissão
+      let showUrl = "";
+      let qr = "";
       if (room?.publicSlug) {
-        const showUrl = `${window.location.origin}/show/${room.publicSlug}`;
+        showUrl = `${window.location.origin}/show/${room.publicSlug}`;
         try {
           const QRCode = await import("qrcode");
-          const qr = await QRCode.toDataURL(showUrl, { width: 200, margin: 1 });
+          qr = await QRCode.toDataURL(showUrl, { width: 200, margin: 1 });
           setShowQrCode(qr);
-
-          // Imprimir automaticamente em nova janela (sem React no DOM)
-          setTimeout(() => {
-            const html = buildPrintHtml(cards, playerName, room.name, showUrl, qr);
-            printInNewWindow(html);
-          }, 400);
         } catch {
-          // Imprimir sem QR Code do show se falhar
-          setTimeout(() => {
-            const html = buildPrintHtml(cards, playerName, room.name, "", "");
-            printInNewWindow(html);
-          }, 400);
+          // sem QR Code do show
         }
       }
+
+      // Agenda impressão para depois que os Dialogs fecharem
+      pendingPrintRef.current = { cards, showUrl, showQr: qr };
+
+      // Fecha o Dialog de pagamento — o useEffect acima dispara a impressão
+      setShowPayment(false);
+      setShowSuccess(true);
     },
     onError: (err) => {
       toast.error(err.message);
