@@ -113,6 +113,28 @@ function buildPrintHtml(
 </html>`;
 }
 
+// Detecta se está rodando no app nativo Android com impressora PagSeguro
+function isAndroidPOS(): boolean {
+  return typeof (window as any).AndroidPrinter !== 'undefined';
+}
+
+// Imprime via app nativo Android (PagSeguro Moderninha Smart)
+function printViaNative(cards: GeneratedCard[], playerName: string, roomName: string): void {
+  const printer = (window as any).AndroidPrinter;
+  if (!printer) return;
+  try {
+    const cardsData = cards.map(card => ({
+      numbers: card.numbers ?? card.grid.flat().filter((n: number) => n !== 0),
+      playerName,
+      cardId: card.token.slice(0, 8).toUpperCase(),
+      roomName,
+    }));
+    printer.printCards(JSON.stringify(cardsData));
+  } catch (err) {
+    toast.error("Erro na impressão nativa: " + String(err));
+  }
+}
+
 function printViaIframe(html: string) {
   // Remove iframe anterior se existir
   const existing = document.getElementById("__bingo_print_frame__");
@@ -199,9 +221,15 @@ export default function SellCards() {
           setShowSuccess(true);
           // Impressão depois de mais um frame (tela de sucesso já renderizou)
           setTimeout(() => {
-            printViaIframe(
-              buildPrintHtml(pending.cards, pending.playerName, pending.roomName, pending.showUrl, pending.showQr)
-            );
+            if (isAndroidPOS()) {
+              // Usa impressora nativa do POS PagSeguro
+              printViaNative(pending.cards, pending.playerName, pending.roomName);
+            } else {
+              // Usa impressão via iframe para navegador web
+              printViaIframe(
+                buildPrintHtml(pending.cards, pending.playerName, pending.roomName, pending.showUrl, pending.showQr)
+              );
+            }
           }, 200);
         });
       });
@@ -271,7 +299,11 @@ export default function SellCards() {
 
   const handleReprint = useCallback(() => {
     if (!room) return;
-    printViaIframe(buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode));
+    if (isAndroidPOS()) {
+      printViaNative(generatedCards, playerName, room.name);
+    } else {
+      printViaIframe(buildPrintHtml(generatedCards, playerName, room.name, showUrl, showQrCode));
+    }
   }, [generatedCards, playerName, room, showUrl, showQrCode]);
 
   function handleNewSale() {
