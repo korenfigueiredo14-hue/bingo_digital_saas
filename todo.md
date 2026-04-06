@@ -237,3 +237,11 @@
 - [x] Gerar página de impressão que dispara automaticamente ao abrir
 - [x] Otimizar layout para impressora térmica 58mm/80mm do POS
 - [x] Testar fluxo completo: pagamento aprovado → cartelas impressas sem travar
+
+## Fase 23 - Melhorias Visuais na Tela de Transmissão
+- [x] Remover faixa/linha verde da tela de transmissão
+- [x] Lista vermelha (esquerda): expandir de topo a topo (full height)
+- [x] Área branca (cartelas rodapé): mostrar 3 cartelas em vez de 2
+- [x] Azul claro (tabela direita): trocar "GOLF" e "OMEGA" por "Bingo da Sorte"
+- [x] Centro azul (bolas): adicionar globo girando com bolas animadas
+- [x] KN da Sorte (topo centro): colocar nome "Bingo da Sorte"
