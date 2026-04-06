@@ -262,3 +262,6 @@
 - [x] Corrigir preço das cartelas no dashboard do vendedor (usar cardPrice da sala, não hardcoded)
 - [x] Igualar botões de quantidade do vendedor ao padrão do admin (1,2,3,4,5,6,7,8,9,10,15,20)
 - [x] Garantir campo de horário no formulário de criar novo bingo
+
+## Fase 27 - Redesign Tela de Venda do Vendedor
+- [x] Redesenhar step "form" do SellerDashboard: stats (Vendidas/Disponíveis/Faturado), grid 4x3 com quantidade+preço, paginação, cores escuras

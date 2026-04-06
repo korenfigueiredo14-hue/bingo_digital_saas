@@ -35,6 +35,13 @@ export default function SellerDashboard() {
   const [estName, setEstName] = useState("");
   const [estAddress, setEstAddress] = useState("");
   const [estPhone, setEstPhone] = useState("");
+  const [cardPage, setCardPage] = useState(0); // paginação dos botões de quantidade
+
+  // Gera 120 opções de quantidade (1..120), 12 por página
+  const CARDS_PER_PAGE = 12;
+  const ALL_QUANTITIES = Array.from({ length: 120 }, (_, i) => i + 1);
+  const totalPages = Math.ceil(ALL_QUANTITIES.length / CARDS_PER_PAGE);
+  const pageQuantities = ALL_QUANTITIES.slice(cardPage * CARDS_PER_PAGE, (cardPage + 1) * CARDS_PER_PAGE);
 
   const utils = trpc.useUtils();
 
@@ -270,75 +277,102 @@ export default function SellerDashboard() {
               </>
             )}
 
-            {/* STEP: Formulário de venda */}
+            {/* STEP: Formulário de venda - novo layout */}
             {step === "form" && selectedRoom && (
-              <>
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={() => setStep("list")} className="text-blue-400 p-1">
+              <div className="flex flex-col h-full">
+                {/* Header da tela de venda */}
+                <div className="flex items-center gap-3 px-3 pt-3 pb-2">
+                  <button
+                    onClick={() => setStep("list")}
+                    className="flex items-center gap-1 text-gray-400 hover:text-white text-sm font-medium transition-colors">
                     ← Voltar
-                  </Button>
-                  <h1 className="text-lg font-bold text-white">{selectedRoom.name}</h1>
+                  </button>
+                  <div>
+                    <h1 className="text-base font-bold text-white leading-tight">Vender Cartelas</h1>
+                    <p className="text-xs text-gray-500">{selectedRoom.name} — R$ {CARD_PRICE.toFixed(2)}/cartela</p>
+                  </div>
                 </div>
 
-                <Card className="bg-[#0d1530] border-blue-800/40">
-                  <CardContent className="p-5 space-y-5">
-                    <div>
-                      <Label className="text-blue-300 text-sm font-semibold mb-3 block">Quantidade de Cartelas</Label>
-                      {/* Botões rápidos */}
-                      <div className="grid grid-cols-6 gap-2 mb-3">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20].map((q) => (
-                          <button key={q} onClick={() => setQuantity(q)}
-                            className={`py-3 rounded-xl font-bold text-lg transition-all ${
-                              quantity === q
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                : "bg-blue-900/30 text-blue-300 hover:bg-blue-800/40"
-                            }`}>
-                            {q}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Controle manual */}
-                      <div className="flex items-center justify-center gap-4">
-                        <Button variant="outline" size="sm"
-                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          className="border-blue-800/60 text-white bg-blue-950/40 w-12 h-12 p-0 text-xl rounded-full">
-                          −
-                        </Button>
-                        <span className="text-4xl font-black text-white w-16 text-center">{quantity}</span>
-                        <Button variant="outline" size="sm"
-                          onClick={() => setQuantity(Math.min(50, quantity + 1))}
-                          className="border-blue-800/60 text-white bg-blue-950/40 w-12 h-12 p-0 text-xl rounded-full">
-                          +
-                        </Button>
-                      </div>
-                    </div>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-2 px-3 pb-3">
+                  <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 text-center">
+                    <p className="text-2xl font-black text-white">{report?.cardCount ?? 0}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Vendidas</p>
+                  </div>
+                  <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 text-center">
+                    <p className="text-2xl font-black text-green-400">{selectedRoom.maxCards ?? 1000}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Disponíveis</p>
+                  </div>
+                  <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 text-center">
+                    <p className="text-xl font-black text-yellow-400">R$ {Number(report?.totalSales ?? 0).toFixed(2)}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Faturado</p>
+                  </div>
+                </div>
 
-                    <div className="bg-blue-900/30 rounded-xl p-4 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-blue-300">Valor por cartela</span>
-                        <span className="text-white font-semibold">R$ {CARD_PRICE.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-blue-300">Quantidade</span>
-                        <span className="text-white font-semibold">{quantity}x</span>
-                      </div>
-                      <div className="flex justify-between text-xl font-black border-t border-blue-800/40 pt-3 mt-2">
-                        <span className="text-blue-200">Total a cobrar</span>
-                        <span className="text-green-400">R$ {(CARD_PRICE * quantity).toFixed(2)}</span>
-                      </div>
-                    </div>
+                {/* Seção de quantidade */}
+                <div className="px-3 pb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShoppingCart className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-semibold text-gray-300">Quantidade de Cartelas</span>
+                  </div>
 
-                    <Button className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-5 text-lg"
-                      onClick={handleGenerate} disabled={generateMutation.isPending}>
-                      {generateMutation.isPending ? (
-                        <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Gerando...</>
-                      ) : (
-                        <><CheckCircle className="w-5 h-5 mr-2" /> Confirmar e Imprimir</>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </>
+                  {/* Grid 4x3 de botões */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {pageQuantities.map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => setQuantity(q)}
+                        className={`rounded-xl py-3 flex flex-col items-center justify-center transition-all border ${
+                          quantity === q
+                            ? "bg-[#1d4ed8] border-[#3b82f6] shadow-lg shadow-blue-900/40"
+                            : "bg-[#111827] border-[#1f2937] hover:border-[#374151]"
+                        }`}>
+                        <span className={`text-xl font-black leading-tight ${
+                          quantity === q ? "text-white" : "text-white"
+                        }`}>{q}</span>
+                        <span className={`text-xs mt-0.5 ${
+                          quantity === q ? "text-blue-200" : "text-gray-500"
+                        }`}>R$ {(CARD_PRICE * q).toFixed(2)}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Paginação */}
+                  <div className="flex items-center justify-between mt-3 px-1">
+                    <button
+                      onClick={() => { setCardPage(Math.max(0, cardPage - 1)); }}
+                      disabled={cardPage === 0}
+                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium">
+                      ‹ Anterior
+                    </button>
+                    <span className="text-xs text-gray-500">Pág. {cardPage + 1}/{totalPages}</span>
+                    <button
+                      onClick={() => { setCardPage(Math.min(totalPages - 1, cardPage + 1)); }}
+                      disabled={cardPage === totalPages - 1}
+                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium">
+                      Próxima ›
+                    </button>
+                  </div>
+                </div>
+
+                {/* Botão confirmar */}
+                <div className="px-3 pb-4 mt-auto">
+                  <div className="flex justify-between items-center mb-3 px-1">
+                    <span className="text-sm text-gray-400">Total a cobrar</span>
+                    <span className="text-xl font-black text-green-400">R$ {(CARD_PRICE * quantity).toFixed(2)}</span>
+                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-5 text-lg rounded-xl"
+                    onClick={handleGenerate}
+                    disabled={generateMutation.isPending}>
+                    {generateMutation.isPending ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Gerando...</>
+                    ) : (
+                      <><CheckCircle className="w-5 h-5 mr-2" /> Confirmar e Imprimir</>
+                    )}
+                  </Button>
+                </div>
+              </div>
             )}
 
             {/* STEP: Sucesso */}
