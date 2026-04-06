@@ -245,3 +245,6 @@
 - [x] Azul claro (tabela direita): trocar "GOLF" e "OMEGA" por "Bingo da Sorte"
 - [x] Centro azul (bolas): adicionar globo girando com bolas animadas
 - [x] KN da Sorte (topo centro): colocar nome "Bingo da Sorte"
+
+## Fase 24 - Simplificação da Tela de Venda
+- [x] Remover campos de nome e telefone da tela de venda de cartelas

@@ -3,8 +3,6 @@ import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +18,6 @@ import {
   ArrowLeft,
   Ticket,
   DollarSign,
-  User,
-  Phone,
   Tv,
 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -188,8 +184,8 @@ export default function SellCards() {
   const roomId = parseInt(id);
   const [, navigate] = useLocation();
 
-  const [playerName, setPlayerName] = useState("");
-  const [playerPhone, setPlayerPhone] = useState("");
+  const playerName = "";
+  const playerPhone = "";
   const [quantity, setQuantity] = useState(0);
   const [page, setPage] = useState(0);
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
@@ -282,8 +278,6 @@ export default function SellCards() {
   const showUrl = room ? `${window.location.origin}/show/${room.publicSlug}` : "";
 
   function handleNext() {
-    if (!playerName.trim()) { toast.error("Informe o nome do jogador"); return; }
-    if (!playerPhone.trim()) { toast.error("Informe o telefone"); return; }
     if (quantity < 1) { toast.error("Selecione pelo menos 1 cartela"); return; }
     setConfirmOpen(true);
   }
@@ -307,8 +301,6 @@ export default function SellCards() {
   }, [generatedCards, playerName, room, showUrl, showQrCode]);
 
   function handleNewSale() {
-    setPlayerName("");
-    setPlayerPhone("");
     setQuantity(0);
     setPage(0);
     setGeneratedCards([]);
@@ -349,8 +341,7 @@ export default function SellCards() {
             <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto" />
             <h2 className="text-xl font-bold text-foreground">Venda Realizada!</h2>
             <p className="text-white/70">
-              <span className="font-semibold text-white">{generatedCards.length} cartela(s)</span> geradas para{" "}
-              <span className="font-semibold text-white">{playerName}</span>
+              <span className="font-semibold text-white">{generatedCards.length} cartela(s)</span> geradas com sucesso!
             </p>
             <p className="text-yellow-400 font-bold text-lg">
               Total cobrado: R$ {totalPrice.toFixed(2)}
@@ -436,34 +427,6 @@ export default function SellCards() {
           </div>
         </div>
 
-        <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-            <User className="w-4 h-4 text-primary" /> Dados do Jogador
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Nome *</Label>
-              <Input
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Nome completo"
-                className="bg-input h-10"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Phone className="w-3 h-3" /> Telefone *
-              </Label>
-              <Input
-                value={playerPhone}
-                onChange={(e) => setPlayerPhone(e.target.value)}
-                placeholder="(00) 00000-0000"
-                type="tel"
-                className="bg-input h-10"
-              />
-            </div>
-          </div>
-        </div>
 
         <div className="bg-card border border-border/50 rounded-xl p-4 space-y-3">
           <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -532,7 +495,7 @@ export default function SellCards() {
             <Button
               className="w-full h-12 text-base font-bold gap-2"
               onClick={handleNext}
-              disabled={!playerName.trim() || !playerPhone.trim()}
+              disabled={false}
             >
               <ChevronRight className="w-5 h-5" />
               Cobrar R$ {totalPrice.toFixed(2)} na Maquininha
@@ -552,14 +515,6 @@ export default function SellCards() {
           </DialogHeader>
           <div className="space-y-3 text-sm">
             <div className="bg-secondary/50 rounded-lg p-3 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Jogador</span>
-                <span className="font-semibold">{playerName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Telefone</span>
-                <span className="font-semibold">{playerPhone}</span>
-              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Cartelas</span>
                 <span className="font-semibold">{quantity}</span>
