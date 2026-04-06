@@ -257,3 +257,8 @@
 - [x] Dashboard do vendedor: aba Premiados (prêmios saídos na loja)
 - [x] Dashboard do vendedor: aba Relatórios (kit, prêmio, comissão, valor líquido para admin, histórico de rodadas e vendas)
 - [x] Programação de bingo por horários na área de operador
+
+## Fase 26 - Correções de Preço e Agendamento
+- [x] Corrigir preço das cartelas no dashboard do vendedor (usar cardPrice da sala, não hardcoded)
+- [x] Igualar botões de quantidade do vendedor ao padrão do admin (1,2,3,4,5,6,7,8,9,10,15,20)
+- [x] Garantir campo de horário no formulário de criar novo bingo

@@ -13,6 +13,8 @@ import {
   TrendingUp, Package, AlertCircle, Star, Calendar,
 } from "lucide-react";
 
+const CARD_PRICE = 0.50; // R$ 0,50 fixo por cartela
+
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   open: { label: "Aberto", color: "text-green-400 border-green-500/40 bg-green-500/10" },
   running: { label: "Em Sorteio", color: "text-yellow-400 border-yellow-500/40 bg-yellow-500/10" },
@@ -235,7 +237,7 @@ export default function SellerDashboard() {
                               <div>
                                 <p className="font-bold text-white text-lg">{room.name}</p>
                                 <p className="text-sm text-blue-400 mt-0.5">
-                                  R$ {Number(room.cardPrice).toFixed(2)} por cartela
+                                  R$ {CARD_PRICE.toFixed(2)} por cartela
                                 </p>
                               </div>
                               <Badge className={`text-xs border ${statusInfo.color}`}>
@@ -283,8 +285,8 @@ export default function SellerDashboard() {
                     <div>
                       <Label className="text-blue-300 text-sm font-semibold mb-3 block">Quantidade de Cartelas</Label>
                       {/* Botões rápidos */}
-                      <div className="grid grid-cols-5 gap-2 mb-3">
-                        {[1, 2, 3, 5, 10].map((q) => (
+                      <div className="grid grid-cols-6 gap-2 mb-3">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20].map((q) => (
                           <button key={q} onClick={() => setQuantity(q)}
                             className={`py-3 rounded-xl font-bold text-lg transition-all ${
                               quantity === q
@@ -314,7 +316,7 @@ export default function SellerDashboard() {
                     <div className="bg-blue-900/30 rounded-xl p-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-blue-300">Valor por cartela</span>
-                        <span className="text-white font-semibold">R$ {Number(selectedRoom.cardPrice).toFixed(2)}</span>
+                        <span className="text-white font-semibold">R$ {CARD_PRICE.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-blue-300">Quantidade</span>
@@ -322,7 +324,7 @@ export default function SellerDashboard() {
                       </div>
                       <div className="flex justify-between text-xl font-black border-t border-blue-800/40 pt-3 mt-2">
                         <span className="text-blue-200">Total a cobrar</span>
-                        <span className="text-green-400">R$ {(Number(selectedRoom.cardPrice) * quantity).toFixed(2)}</span>
+                        <span className="text-green-400">R$ {(CARD_PRICE * quantity).toFixed(2)}</span>
                       </div>
                     </div>
 
