@@ -94,6 +94,7 @@ export async function createLocalUser(data: {
   name: string;
   email: string;
   passwordHash: string;
+  role?: "user" | "admin" | "seller";
 }): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
@@ -105,6 +106,7 @@ export async function createLocalUser(data: {
     email: data.email,
     passwordHash: data.passwordHash,
     loginMethod: "local",
+    role: data.role ?? "user",
     lastSignedIn: new Date(),
   });
   return (result[0] as any).insertId;
@@ -404,4 +406,45 @@ export async function updateUserSubscription(
     .update(users)
     .set({ subscriptionPlan: plan, subscriptionExpiresAt: expiresAt ?? null } as any)
     .where(eq(users.id, userId));
+}
+
+// ─── Scheduled Rooms ─────────────────────────────────────────────────────────
+export async function getScheduledRooms() {
+  const db = await getDb();
+  if (!db) return [];
+  // Retorna salas em draft que têm scheduledAt definido (futuras)
+  return db
+    .select()
+    .from(bingoRooms)
+    .where(sql`${bingoRooms.status} = 'draft' AND ${bingoRooms.startedAt} IS NOT NULL`)
+    .orderBy(bingoRooms.startedAt);
+}
+
+// ─── Winners for Seller ───────────────────────────────────────────────────────
+export async function getWinnersForSeller(sellerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Busca ganhadores das salas onde o vendedor vendeu cartelas
+  return db
+    .select({
+      winner: winners,
+      card: {
+        id: bingoCards.id,
+        playerName: bingoCards.playerName,
+        token: bingoCards.token,
+        pricePaid: bingoCards.pricePaid,
+      },
+      room: {
+        id: bingoRooms.id,
+        name: bingoRooms.name,
+        prizeQuadra: bingoRooms.prizeQuadra,
+        prizeQuina: bingoRooms.prizeQuina,
+        prizeFullCard: bingoRooms.prizeFullCard,
+      },
+    })
+    .from(winners)
+    .leftJoin(bingoCards, eq(winners.cardId, bingoCards.id))
+    .leftJoin(bingoRooms, eq(winners.roomId, bingoRooms.id))
+    .where(eq(bingoCards.operatorId, sellerId))
+    .orderBy(desc(winners.confirmedAt));
 }

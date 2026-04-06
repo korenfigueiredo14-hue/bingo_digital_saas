@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState } from "react";
-import { ArrowLeft, Dices, Ticket, Trophy, Clock } from "lucide-react";
+import { ArrowLeft, Dices, Ticket, Trophy, Clock, Calendar, CheckCircle } from "lucide-react";
 
 const CARD_PRICE = 0.50; // R$ 0,50 fixo por cartela
 
@@ -24,11 +24,18 @@ export default function RoomCreate() {
     prizeDescription: "",
     drawIntervalSeconds: "5",
     winCondition: "any" as "line" | "column" | "full_card" | "any",
+    useSchedule: false,
+    scheduledDate: "",
+    scheduledTime: "",
   });
 
   const createMutation = trpc.rooms.create.useMutation({
     onSuccess: (data) => {
-      toast.success("Bingo criado com sucesso!");
+      if (data.scheduled) {
+        toast.success("Bingo agendado com sucesso!");
+      } else {
+        toast.success("Bingo criado com sucesso!");
+      }
       navigate(`/rooms/${data.id}`);
     },
     onError: (e) => toast.error(e.message),
@@ -44,10 +51,28 @@ export default function RoomCreate() {
     const prizeQuina = parseFloat(form.prizeQuina) || 0;
     const prizeFullCard = parseFloat(form.prizeFullCard) || 0;
 
+    // Montar scheduledAt se agendamento habilitado
+    let scheduledAt: string | undefined;
+    if (form.useSchedule && form.scheduledDate && form.scheduledTime) {
+      const dt = new Date(`${form.scheduledDate}T${form.scheduledTime}:00`);
+      if (isNaN(dt.getTime())) {
+        toast.error("Data/hora de agendamento inválida");
+        return;
+      }
+      if (dt <= new Date()) {
+        toast.error("A data de agendamento deve ser no futuro");
+        return;
+      }
+      scheduledAt = dt.toISOString();
+    } else if (form.useSchedule && (!form.scheduledDate || !form.scheduledTime)) {
+      toast.error("Informe a data e hora do agendamento");
+      return;
+    }
+
     createMutation.mutate({
       name: form.name.trim(),
       cardPrice: CARD_PRICE,
-      prize: prizeFullCard, // prize legado = cartela cheia
+      prize: prizeFullCard,
       prizeDescription: form.prizeDescription || undefined,
       prizeQuadra,
       prizeQuina,
@@ -56,11 +81,17 @@ export default function RoomCreate() {
       maxCards,
       winCondition: form.winCondition,
       autoDrawEnabled: false,
+      scheduledAt,
     });
   };
 
   const maxCards = parseInt(form.maxCards) || 0;
   const totalRevenue = maxCards * CARD_PRICE;
+
+  // Calcular data/hora mínima (agora + 5 min)
+  const minDateTime = new Date(Date.now() + 5 * 60 * 1000);
+  const minDate = minDateTime.toISOString().slice(0, 10);
+  const minTime = minDateTime.toTimeString().slice(0, 5);
 
   return (
     <DashboardLayout>
@@ -85,7 +116,7 @@ export default function RoomCreate() {
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Ex: Bingo de Natal 2026"
+                  placeholder="Ex: Bingo da Sorte"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
@@ -93,6 +124,84 @@ export default function RoomCreate() {
                   autoFocus
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Agendamento */}
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-purple-400" /> Agendamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Toggle de agendamento */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/50">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Programar por horário</p>
+                  <p className="text-xs text-muted-foreground">
+                    {form.useSchedule ? "Bingo será criado como agendado" : "Bingo será criado imediatamente"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, useSchedule: !form.useSchedule })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    form.useSchedule ? "bg-purple-600" : "bg-muted"
+                  }`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    form.useSchedule ? "translate-x-6" : "translate-x-0"
+                  }`} />
+                </button>
+              </div>
+
+              {form.useSchedule && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="scheduledDate" className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="w-3 h-3" /> Data
+                    </Label>
+                    <Input
+                      id="scheduledDate"
+                      type="date"
+                      min={minDate}
+                      value={form.scheduledDate}
+                      onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })}
+                      className="bg-input"
+                      required={form.useSchedule}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="scheduledTime" className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Horário
+                    </Label>
+                    <Input
+                      id="scheduledTime"
+                      type="time"
+                      value={form.scheduledTime}
+                      onChange={(e) => setForm({ ...form, scheduledTime: e.target.value })}
+                      className="bg-input"
+                      required={form.useSchedule}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {form.useSchedule && form.scheduledDate && form.scheduledTime && (
+                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-sm">
+                  <CheckCircle className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className="text-purple-300">
+                    Bingo agendado para{" "}
+                    <strong>
+                      {new Date(`${form.scheduledDate}T${form.scheduledTime}:00`).toLocaleString("pt-BR", {
+                        day: "2-digit", month: "2-digit", year: "numeric",
+                        hour: "2-digit", minute: "2-digit",
+                      })}
+                    </strong>
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -104,7 +213,6 @@ export default function RoomCreate() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Presets rápidos */}
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Seleção rápida:</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -127,7 +235,6 @@ export default function RoomCreate() {
                 </div>
               </div>
 
-              {/* Input manual */}
               <div className="space-y-1.5">
                 <Label htmlFor="maxCards" className="text-xs text-muted-foreground">Ou digite a quantidade:</Label>
                 <Input
@@ -141,7 +248,6 @@ export default function RoomCreate() {
                 />
               </div>
 
-              {/* Resumo financeiro */}
               {maxCards > 0 && (
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 space-y-1.5 text-sm">
                   <div className="flex justify-between">
@@ -329,7 +435,12 @@ export default function RoomCreate() {
               className="flex-1 h-12 text-base font-bold"
               disabled={createMutation.isPending || !form.name.trim() || maxCards < 1}
             >
-              {createMutation.isPending ? "Criando..." : "Criar Bingo"}
+              {createMutation.isPending
+                ? "Criando..."
+                : form.useSchedule
+                ? "Agendar Bingo"
+                : "Criar Bingo"
+              }
             </Button>
           </div>
         </form>

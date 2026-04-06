@@ -3,12 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Plus, Dices, ArrowRight, Trash2, Play, Pause, Square, ExternalLink } from "lucide-react";
+import { Plus, Dices, ArrowRight, Trash2, Play, Pause, Square, ExternalLink, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft:    { label: "Rascunho",  color: "bg-muted text-muted-foreground" },
+  scheduled:{ label: "Agendado",  color: "bg-purple-500/20 text-purple-400" },
   open:     { label: "Aberto",    color: "bg-blue-500/20 text-blue-400" },
   running:  { label: "Ao Vivo",   color: "bg-primary/20 text-primary" },
   paused:   { label: "Pausado",   color: "bg-yellow-500/20 text-yellow-400" },
@@ -87,6 +88,12 @@ export default function RoomList() {
                           <span>🏆 Prêmio: R${Number(room.prize).toFixed(2)}</span>
                           <span>🎯 Vitória: {room.winCondition === "any" ? "Qualquer" : room.winCondition === "full_card" ? "Cartela cheia" : room.winCondition === "line" ? "Linha" : "Coluna"}</span>
                           {room.currentBall && <span>🎱 Último: {room.currentBall}</span>}
+                          {room.status === "draft" && (room as any).startedAt && (
+                            <span className="flex items-center gap-1 text-purple-400">
+                              <Calendar className="w-3 h-3" />
+                              Agendado: {new Date((room as any).startedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
                         </div>
                       </div>
 

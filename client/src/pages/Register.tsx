@@ -6,22 +6,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, User, Dices } from "lucide-react";
+import { Loader2, Mail, Lock, User, Dices, Store, ShieldCheck, ChevronRight } from "lucide-react";
+
+type AccountType = "user" | "seller";
 
 export default function Register() {
   const [, navigate] = useLocation();
+  const [accountType, setAccountType] = useState<AccountType>("user");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [establishmentName, setEstablishmentName] = useState("");
+  const [establishmentPhone, setEstablishmentPhone] = useState("");
 
   const utils = trpc.useUtils();
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await utils.auth.me.invalidate();
       toast.success("Conta criada com sucesso! Bem-vindo!");
-      navigate("/dashboard");
+      // Redirecionar baseado no role
+      if (data.role === "seller") {
+        navigate("/seller");
+      } else {
+        navigate("/dashboard");
+      }
     },
     onError: (err) => {
       if (err.message?.includes("já cadastrado")) {
@@ -46,8 +56,26 @@ export default function Register() {
       toast.error("A senha deve ter pelo menos 6 caracteres");
       return;
     }
-    registerMutation.mutate({ name, email, password });
+    if (accountType === "seller" && !establishmentName.trim()) {
+      toast.error("Informe o nome do seu estabelecimento");
+      return;
+    }
+    registerMutation.mutate({
+      name,
+      email,
+      password,
+      role: accountType,
+      establishmentName: accountType === "seller" ? establishmentName : undefined,
+      establishmentPhone: accountType === "seller" ? establishmentPhone : undefined,
+    });
   }
+
+  const inputStyle = {
+    background: "rgba(20, 40, 80, 0.8)",
+    border: "1px solid rgba(30, 144, 255, 0.3)",
+    color: "#fff",
+    borderRadius: 8,
+  };
 
   return (
     <div style={{
@@ -61,20 +89,20 @@ export default function Register() {
       {Array.from({ length: 60 }, (_, i) => (
         <div key={i} style={{
           position: "absolute",
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          width: Math.random() * 2 + 0.5,
-          height: Math.random() * 2 + 0.5,
+          left: `${(i * 17 + 7) % 100}%`,
+          top: `${(i * 13 + 5) % 100}%`,
+          width: (i % 3) + 0.5,
+          height: (i % 3) + 0.5,
           borderRadius: "50%",
           background: "#fff",
-          opacity: Math.random() * 0.5 + 0.1,
+          opacity: (i % 5) * 0.1 + 0.1,
           pointerEvents: "none",
         }} />
       ))}
 
-      <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
+      <div style={{ width: "100%", maxWidth: 460, position: "relative", zIndex: 1 }}>
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{
             width: 64, height: 64, borderRadius: "50%",
             background: "linear-gradient(135deg, #1e90ff, #0a2560)",
@@ -107,29 +135,66 @@ export default function Register() {
           <CardHeader style={{ paddingBottom: 8 }}>
             <CardTitle style={{ color: "#fff", fontSize: 20 }}>Criar Conta</CardTitle>
             <CardDescription style={{ color: "#90caf9" }}>
-              Preencha os dados para começar a usar o Bingo Digital
+              Escolha o tipo de conta e preencha os dados
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Seletor de tipo de conta */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+              <button
+                type="button"
+                onClick={() => setAccountType("user")}
+                style={{
+                  padding: "14px 10px",
+                  borderRadius: 10,
+                  border: accountType === "user"
+                    ? "2px solid #1e90ff"
+                    : "2px solid rgba(30, 144, 255, 0.2)",
+                  background: accountType === "user"
+                    ? "rgba(30, 144, 255, 0.15)"
+                    : "rgba(20, 40, 80, 0.5)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                }}
+              >
+                <ShieldCheck size={24} style={{ margin: "0 auto 6px", color: accountType === "user" ? "#1e90ff" : "#5a7aaa" }} />
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Administrador</div>
+                <div style={{ fontSize: 10, color: "#5a7aaa", marginTop: 2 }}>Cria e opera bingos</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccountType("seller")}
+                style={{
+                  padding: "14px 10px",
+                  borderRadius: 10,
+                  border: accountType === "seller"
+                    ? "2px solid #22c55e"
+                    : "2px solid rgba(30, 144, 255, 0.2)",
+                  background: accountType === "seller"
+                    ? "rgba(34, 197, 94, 0.12)"
+                    : "rgba(20, 40, 80, 0.5)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                }}
+              >
+                <Store size={24} style={{ margin: "0 auto 6px", color: accountType === "seller" ? "#22c55e" : "#5a7aaa" }} />
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Vendedor</div>
+                <div style={{ fontSize: 10, color: "#5a7aaa", marginTop: 2 }}>Vende cartelas na loja</div>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 13 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <Label htmlFor="name" style={{ color: "#90caf9", fontSize: 13 }}>
                   <User size={13} style={{ display: "inline", marginRight: 4 }} />
                   Nome completo
                 </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoComplete="name"
-                  style={{
-                    background: "rgba(20, 40, 80, 0.8)",
-                    border: "1px solid rgba(30, 144, 255, 0.3)",
-                    color: "#fff", borderRadius: 8,
-                  }}
-                />
+                <Input id="name" type="text" placeholder="Seu nome" value={name}
+                  onChange={(e) => setName(e.target.value)} autoComplete="name" style={inputStyle} />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -137,19 +202,8 @@ export default function Register() {
                   <Mail size={13} style={{ display: "inline", marginRight: 4 }} />
                   E-mail
                 </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  style={{
-                    background: "rgba(20, 40, 80, 0.8)",
-                    border: "1px solid rgba(30, 144, 255, 0.3)",
-                    color: "#fff", borderRadius: 8,
-                  }}
-                />
+                <Input id="email" type="email" placeholder="seu@email.com" value={email}
+                  onChange={(e) => setEmail(e.target.value)} autoComplete="email" style={inputStyle} />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -157,19 +211,8 @@ export default function Register() {
                   <Lock size={13} style={{ display: "inline", marginRight: 4 }} />
                   Senha (mínimo 6 caracteres)
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  style={{
-                    background: "rgba(20, 40, 80, 0.8)",
-                    border: "1px solid rgba(30, 144, 255, 0.3)",
-                    color: "#fff", borderRadius: 8,
-                  }}
-                />
+                <Input id="password" type="password" placeholder="••••••••" value={password}
+                  onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" style={inputStyle} />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -177,41 +220,70 @@ export default function Register() {
                   <Lock size={13} style={{ display: "inline", marginRight: 4 }} />
                   Confirmar senha
                 </Label>
-                <Input
-                  id="confirm"
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  autoComplete="new-password"
+                <Input id="confirm" type="password" placeholder="••••••••" value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password"
                   style={{
-                    background: "rgba(20, 40, 80, 0.8)",
+                    ...inputStyle,
                     border: confirm && confirm !== password
                       ? "1px solid rgba(239, 68, 68, 0.6)"
                       : "1px solid rgba(30, 144, 255, 0.3)",
-                    color: "#fff", borderRadius: 8,
-                  }}
-                />
+                  }} />
                 {confirm && confirm !== password && (
                   <span style={{ color: "#ef4444", fontSize: 11 }}>As senhas não coincidem</span>
                 )}
               </div>
 
+              {/* Campos extras para vendedor */}
+              {accountType === "seller" && (
+                <div style={{
+                  background: "rgba(34, 197, 94, 0.06)",
+                  border: "1px solid rgba(34, 197, 94, 0.2)",
+                  borderRadius: 10,
+                  padding: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}>
+                  <p style={{ color: "#22c55e", fontSize: 12, fontWeight: 600, margin: 0 }}>
+                    <Store size={12} style={{ display: "inline", marginRight: 4 }} />
+                    Dados do Estabelecimento
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <Label style={{ color: "#90caf9", fontSize: 12 }}>Nome do estabelecimento *</Label>
+                    <Input placeholder="Ex: Bar do João, Mercado Central..."
+                      value={establishmentName} onChange={(e) => setEstablishmentName(e.target.value)}
+                      style={inputStyle} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <Label style={{ color: "#90caf9", fontSize: 12 }}>Telefone (opcional)</Label>
+                    <Input placeholder="(00) 00000-0000" value={establishmentPhone}
+                      onChange={(e) => setEstablishmentPhone(e.target.value)} style={inputStyle} />
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={registerMutation.isPending}
                 style={{
-                  background: "linear-gradient(90deg, #1565c0, #1e90ff)",
+                  background: accountType === "seller"
+                    ? "linear-gradient(90deg, #16a34a, #22c55e)"
+                    : "linear-gradient(90deg, #1565c0, #1e90ff)",
                   border: "none", borderRadius: 8,
                   height: 44, fontSize: 15, fontWeight: 700,
                   color: "#fff", cursor: "pointer",
-                  boxShadow: "0 4px 20px rgba(30, 144, 255, 0.4)",
+                  boxShadow: accountType === "seller"
+                    ? "0 4px 20px rgba(34, 197, 94, 0.3)"
+                    : "0 4px 20px rgba(30, 144, 255, 0.4)",
                   marginTop: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
               >
                 {registerMutation.isPending ? (
-                  <><Loader2 size={16} className="animate-spin" style={{ marginRight: 8 }} />Criando conta...</>
-                ) : "Criar Conta"}
+                  <><Loader2 size={16} className="animate-spin" />Criando conta...</>
+                ) : (
+                  <><ChevronRight size={16} />Criar Conta {accountType === "seller" ? "de Vendedor" : "de Administrador"}</>
+                )}
               </Button>
             </form>
 

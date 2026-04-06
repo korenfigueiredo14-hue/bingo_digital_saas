@@ -6,20 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Mail, Lock, Dices } from "lucide-react";
+import { Loader2, Mail, Lock, Dices, Store, ShieldCheck } from "lucide-react";
+
+type LoginMode = "admin" | "seller";
 
 export default function Login() {
   const [, navigate] = useLocation();
+  const [mode, setMode] = useState<LoginMode>("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const utils = trpc.useUtils();
 
   const loginMutation = trpc.auth.loginLocal.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await utils.auth.me.invalidate();
       toast.success("Login realizado com sucesso!");
-      navigate("/dashboard");
+      // Redirecionar baseado no role retornado pelo servidor
+      if (data.role === "seller") {
+        navigate("/seller");
+      } else {
+        navigate("/dashboard");
+      }
     },
     onError: (err) => {
       toast.error(err.message ?? "E-mail ou senha inválidos");
@@ -35,6 +43,15 @@ export default function Login() {
     loginMutation.mutate({ email, password });
   }
 
+  const inputStyle = {
+    background: "rgba(20, 40, 80, 0.8)",
+    border: "1px solid rgba(30, 144, 255, 0.3)",
+    color: "#fff",
+    borderRadius: 8,
+  };
+
+  const isSeller = mode === "seller";
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -47,20 +64,20 @@ export default function Login() {
       {Array.from({ length: 60 }, (_, i) => (
         <div key={i} style={{
           position: "absolute",
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          width: Math.random() * 2 + 0.5,
-          height: Math.random() * 2 + 0.5,
+          left: `${(i * 17 + 7) % 100}%`,
+          top: `${(i * 13 + 5) % 100}%`,
+          width: (i % 3) + 0.5,
+          height: (i % 3) + 0.5,
           borderRadius: "50%",
           background: "#fff",
-          opacity: Math.random() * 0.5 + 0.1,
+          opacity: (i % 5) * 0.1 + 0.1,
           pointerEvents: "none",
         }} />
       ))}
 
       <div style={{ width: "100%", maxWidth: 420, position: "relative", zIndex: 1 }}>
         {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{
             width: 64, height: 64, borderRadius: "50%",
             background: "linear-gradient(135deg, #1e90ff, #0a2560)",
@@ -83,17 +100,66 @@ export default function Login() {
           </p>
         </div>
 
+        {/* Seletor de modo */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8,
+          marginBottom: 16,
+        }}>
+          <button
+            type="button"
+            onClick={() => setMode("admin")}
+            style={{
+              padding: "12px 8px",
+              borderRadius: 10,
+              border: !isSeller ? "2px solid #1e90ff" : "2px solid rgba(30, 144, 255, 0.2)",
+              background: !isSeller ? "rgba(30, 144, 255, 0.15)" : "rgba(10, 22, 55, 0.7)",
+              color: "#fff",
+              cursor: "pointer",
+              textAlign: "center",
+              transition: "all 0.2s",
+            }}
+          >
+            <ShieldCheck size={20} style={{ margin: "0 auto 4px", color: !isSeller ? "#1e90ff" : "#5a7aaa" }} />
+            <div style={{ fontSize: 12, fontWeight: 700, color: !isSeller ? "#fff" : "#5a7aaa" }}>Administrador</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("seller")}
+            style={{
+              padding: "12px 8px",
+              borderRadius: 10,
+              border: isSeller ? "2px solid #22c55e" : "2px solid rgba(30, 144, 255, 0.2)",
+              background: isSeller ? "rgba(34, 197, 94, 0.12)" : "rgba(10, 22, 55, 0.7)",
+              color: "#fff",
+              cursor: "pointer",
+              textAlign: "center",
+              transition: "all 0.2s",
+            }}
+          >
+            <Store size={20} style={{ margin: "0 auto 4px", color: isSeller ? "#22c55e" : "#5a7aaa" }} />
+            <div style={{ fontSize: 12, fontWeight: 700, color: isSeller ? "#fff" : "#5a7aaa" }}>Vendedor</div>
+          </button>
+        </div>
+
         <Card style={{
           background: "rgba(10, 22, 55, 0.92)",
-          border: "1px solid rgba(30, 144, 255, 0.25)",
+          border: `1px solid ${isSeller ? "rgba(34, 197, 94, 0.25)" : "rgba(30, 144, 255, 0.25)"}`,
           borderRadius: 16,
           boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
           backdropFilter: "blur(12px)",
         }}>
           <CardHeader style={{ paddingBottom: 8 }}>
-            <CardTitle style={{ color: "#fff", fontSize: 20 }}>Entrar</CardTitle>
+            <CardTitle style={{ color: "#fff", fontSize: 20, display: "flex", alignItems: "center", gap: 8 }}>
+              {isSeller
+                ? <><Store size={18} color="#22c55e" /> Acesso do Vendedor</>
+                : <><ShieldCheck size={18} color="#1e90ff" /> Acesso do Administrador</>
+              }
+            </CardTitle>
             <CardDescription style={{ color: "#90caf9" }}>
-              Acesse sua conta com e-mail e senha
+              {isSeller
+                ? "Entre com sua conta de vendedor para acessar as cartelas"
+                : "Acesse o painel de controle do bingo"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -103,20 +169,8 @@ export default function Login() {
                   <Mail size={13} style={{ display: "inline", marginRight: 4 }} />
                   E-mail
                 </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  style={{
-                    background: "rgba(20, 40, 80, 0.8)",
-                    border: "1px solid rgba(30, 144, 255, 0.3)",
-                    color: "#fff",
-                    borderRadius: 8,
-                  }}
-                />
+                <Input id="email" type="email" placeholder="seu@email.com" value={email}
+                  onChange={(e) => setEmail(e.target.value)} autoComplete="email" style={inputStyle} />
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -124,37 +178,32 @@ export default function Login() {
                   <Lock size={13} style={{ display: "inline", marginRight: 4 }} />
                   Senha
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  style={{
-                    background: "rgba(20, 40, 80, 0.8)",
-                    border: "1px solid rgba(30, 144, 255, 0.3)",
-                    color: "#fff",
-                    borderRadius: 8,
-                  }}
-                />
+                <Input id="password" type="password" placeholder="••••••••" value={password}
+                  onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" style={inputStyle} />
               </div>
 
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
                 style={{
-                  background: "linear-gradient(90deg, #1565c0, #1e90ff)",
+                  background: isSeller
+                    ? "linear-gradient(90deg, #16a34a, #22c55e)"
+                    : "linear-gradient(90deg, #1565c0, #1e90ff)",
                   border: "none", borderRadius: 8,
                   height: 44, fontSize: 15, fontWeight: 700,
                   color: "#fff", cursor: "pointer",
-                  boxShadow: "0 4px 20px rgba(30, 144, 255, 0.4)",
+                  boxShadow: isSeller
+                    ? "0 4px 20px rgba(34, 197, 94, 0.3)"
+                    : "0 4px 20px rgba(30, 144, 255, 0.4)",
                   marginTop: 4,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
               >
                 {loginMutation.isPending ? (
-                  <><Loader2 size={16} className="animate-spin" style={{ marginRight: 8 }} />Entrando...</>
-                ) : "Entrar"}
+                  <><Loader2 size={16} className="animate-spin" />Entrando...</>
+                ) : (
+                  isSeller ? "Entrar como Vendedor" : "Entrar como Administrador"
+                )}
               </Button>
             </form>
 

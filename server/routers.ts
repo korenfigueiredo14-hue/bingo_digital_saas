@@ -37,6 +37,8 @@ import {
   getAllActiveRooms,
   getAllRoomsWithOperator,
   getUserById,
+  getScheduledRooms,
+  getWinnersForSeller,
 } from "./db";
 import {
   emitRoomStatusChanged,
@@ -88,10 +90,13 @@ const bingoRoomsRouter = router({
         maxCards: z.number().min(1).max(9999).default(200),
         winCondition: z.enum(["line", "column", "full_card", "any"]).default("any"),
         autoDrawEnabled: z.boolean().default(false),
+        scheduledAt: z.string().optional(), // ISO datetime string para agendamento
       })
     )
     .mutation(async ({ ctx, input }) => {
       const slug = nanoid(10).toLowerCase();
+      // Se scheduledAt informado, criar como draft com startedAt = data agendada
+      const scheduledDate = input.scheduledAt ? new Date(input.scheduledAt) : undefined;
       const id = await createRoom({
         operatorId: ctx.user.id,
         name: input.name,
@@ -107,8 +112,10 @@ const bingoRoomsRouter = router({
         winCondition: input.winCondition,
         autoDrawEnabled: input.autoDrawEnabled,
         publicSlug: slug,
+        startedAt: scheduledDate,
+        status: scheduledDate ? "draft" : "draft", // sempre draft ao criar
       });
-      return { id, slug };
+      return { id, slug, scheduled: !!scheduledDate };
     }),
 
   update: protectedProcedure
@@ -637,6 +644,30 @@ const sellerRouter = router({
     };
   }),
 
+  // Listar todos os bingos (incluindo futuros agendados)
+  listAllRooms: sellerProcedure.query(async () => {
+    const active = await getAllActiveRooms();
+    const scheduled = await getScheduledRooms();
+    return { active, scheduled };
+  }),
+
+  // Relatório do vendedor: vendas, comissão, prêmios
+  getReport: sellerProcedure.query(async ({ ctx }) => {
+    const txs = await getTransactionsByOperator(ctx.user.id);
+    const winnersList = await getWinnersForSeller(ctx.user.id);
+    const totalSales = txs.filter((t: any) => t.status === 'approved').reduce((s: number, t: any) => s + Number(t.amount), 0);
+    const commission = totalSales * 0.30; // 30% comissão do vendedor
+    const netToAdmin = totalSales * 0.70; // 70% para o administrador
+    return {
+      transactions: txs,
+      winners: winnersList,
+      totalSales,
+      commission,
+      netToAdmin,
+      cardCount: txs.filter((t: any) => t.type === 'card_sale' && t.status === 'approved').length,
+    };
+  }),
+
   // Vender cartelas em um bingo ativo (usa a mesma lógica do rooms.generateCards)
   generateCards: sellerProcedure
     .input(z.object({
@@ -865,10 +896,13 @@ export const appRouter = router({
         name: z.string().min(2).max(100),
         email: z.string().email(),
         password: z.string().min(6).max(128),
+        role: z.enum(["user", "seller"]).default("user"),
+        establishmentName: z.string().max(255).optional(),
+        establishmentPhone: z.string().max(20).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const bcrypt = await import("bcryptjs");
-        const { getUserByEmail, createLocalUser, getUserById } = await import("./db");
+        const { getUserByEmail, createLocalUser, getUserById, updateUserRole, updateUserEstablishment } = await import("./db");
         const { sdk } = await import("./_core/sdk");
         const { getSessionCookieOptions } = await import("./_core/cookies");
 
@@ -883,7 +917,16 @@ export const appRouter = router({
           name: input.name,
           email: input.email,
           passwordHash,
+          role: input.role === "seller" ? "seller" : "user",
         });
+
+        // Salvar dados do estabelecimento se for vendedor
+        if (input.role === "seller" && (input.establishmentName || input.establishmentPhone)) {
+          await updateUserEstablishment(userId, {
+            establishmentName: input.establishmentName,
+            establishmentPhone: input.establishmentPhone,
+          });
+        }
 
         const user = await getUserById(userId);
         if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
@@ -893,7 +936,7 @@ export const appRouter = router({
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
 
-        return { success: true, user: { id: user.id, name: user.name, email: user.email } };
+        return { success: true, role: user.role, user: { id: user.id, name: user.name, email: user.email } };
       }),
 
     // ─── Login com email/senha ────────────────────────────────────────────────────────────────────────────────────
@@ -922,7 +965,7 @@ export const appRouter = router({
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
 
-        return { success: true, user: { id: user.id, name: user.name, email: user.email } };
+        return { success: true, role: user.role, user: { id: user.id, name: user.name, email: user.email } };
       }),
   }),
   rooms: bingoRoomsRouter,

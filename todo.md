@@ -248,3 +248,12 @@
 
 ## Fase 24 - Simplificação da Tela de Venda
 - [x] Remover campos de nome e telefone da tela de venda de cartelas
+
+## Fase 25 - Sistema Completo de Vendedores e Agendamento
+- [x] Opção "Sou Vendedor" na tela de login/cadastro
+- [x] Após cadastro de vendedor, redirecionar para dashboard do vendedor
+- [x] Dashboard do vendedor: aba Cartelas (grande, para vender)
+- [x] Dashboard do vendedor: aba Rodadas (próximas rodadas disponíveis)
+- [x] Dashboard do vendedor: aba Premiados (prêmios saídos na loja)
+- [x] Dashboard do vendedor: aba Relatórios (kit, prêmio, comissão, valor líquido para admin, histórico de rodadas e vendas)
+- [x] Programação de bingo por horários na área de operador
