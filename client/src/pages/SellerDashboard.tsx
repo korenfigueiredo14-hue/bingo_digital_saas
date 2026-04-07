@@ -97,29 +97,98 @@ export default function SellerDashboard() {
     });
   }
 
-  function handlePrint(cards: any[], roomName: string, prizeQ?: any, prizeQi?: any, prizeFull?: any) {
+  // Detecta se está rodando no app nativo Android com impressora PagSeguro
+  function isAndroidPOS(): boolean {
+    return typeof (window as any).AndroidPrinter !== 'undefined';
+  }
+
+  // Imprime via impressora nativa do POS Android
+  function printViaNative(cards: any[], roomName: string, prizeQ?: any, prizeQi?: any, prizeFull?: any): void {
+    const printer = (window as any).AndroidPrinter;
+    if (!printer) return;
+    try {
+      const cardsData = cards.map((card: any) => ({
+        numbers: card.numbers ?? [],
+        playerName: profile?.establishmentName ?? "Cliente",
+        cardId: (card.token ?? "").slice(0, 8).toUpperCase(),
+        roomName,
+        prizes: {
+          quadra: `R$${Number(prizeQ ?? 0).toFixed(2)}`,
+          quina: `R$${Number(prizeQi ?? 0).toFixed(2)}`,
+          fullCard: `R$${Number(prizeFull ?? 0).toFixed(2)}`,
+        },
+      }));
+      printer.printCards(JSON.stringify(cardsData));
+      toast.success("Enviando para impressão...");
+    } catch (err) {
+      toast.error("Erro na impressão: " + String(err));
+    }
+  }
+
+  // Imprime via iframe (navegador web / fallback)
+  function printViaIframe(html: string): void {
+    const existing = document.getElementById("__bingo_seller_print_frame__");
+    if (existing) existing.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "__bingo_seller_print_frame__";
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none;visibility:hidden;";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      toast.error("Não foi possível imprimir. Verifique as permissões do navegador.");
+      return;
+    }
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const tryPrint = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        toast.success("Impressão enviada!");
+      } catch {
+        toast.error("Erro ao imprimir. Tente novamente.");
+      } finally {
+        setTimeout(() => iframe.remove(), 2000);
+      }
+    };
+
+    if (iframe.contentDocument?.readyState === "complete") {
+      setTimeout(tryPrint, 300);
+    } else {
+      iframe.onload = () => setTimeout(tryPrint, 300);
+      setTimeout(tryPrint, 1500);
+    }
+  }
+
+  function buildPrintHtml(cards: any[], roomName: string, prizeQ?: any, prizeQi?: any, prizeFull?: any): string {
     const estLabel = profile?.establishmentName
       ? `<div style="font-size:11px;color:#888;margin-bottom:4px;">${profile.establishmentName}</div>`
       : "";
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cartelas</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cartelas</title>
     <style>
-      body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 10px; }
-      .card { border: 2px solid #1e3a8a; border-radius: 8px; padding: 12px; margin-bottom: 16px; page-break-inside: avoid; }
-      .header { text-align: center; margin-bottom: 8px; }
-      .title { font-size: 18px; font-weight: bold; color: #1e3a8a; }
-      .subtitle { font-size: 11px; color: #666; }
-      .numbers { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0; }
-      .num { width: 36px; height: 36px; border-radius: 50%; background: #1e3a8a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
-      .prizes { display: flex; gap: 8px; justify-content: center; font-size: 10px; color: #555; margin-top: 6px; }
-      .prize { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; }
-      .token { font-size: 9px; color: #aaa; text-align: center; margin-top: 4px; }
+      @page { size: 80mm auto; margin: 2mm; }
+      body { font-family: Arial, sans-serif; background: #fff; margin: 0; padding: 4mm; }
+      .card { border: 2px solid #1e3a8a; border-radius: 8px; padding: 8px; margin-bottom: 10px; page-break-inside: avoid; }
+      .header { text-align: center; margin-bottom: 6px; }
+      .title { font-size: 16px; font-weight: bold; color: #1e3a8a; }
+      .subtitle { font-size: 10px; color: #666; }
+      .numbers { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 8px 0; }
+      .num { width: 32px; height: 32px; border-radius: 50%; background: #1e3a8a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
+      .prizes { display: flex; gap: 6px; justify-content: center; font-size: 9px; color: #555; margin-top: 5px; }
+      .prize { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; }
+      .token { font-size: 8px; color: #aaa; text-align: center; margin-top: 3px; }
       @media print { body { padding: 0; } }
     </style></head><body>
-    ${cards.map((c) => `
+    ${cards.map((c: any) => `
       <div class="card">
         <div class="header">
           ${estLabel}
-          <div class="title">🎱 ${roomName}</div>
+          <div class="title">${roomName}</div>
           <div class="subtitle">Cartela Digital de Bingo</div>
         </div>
         <div class="numbers">${(c.numbers || []).map((n: number) => `<div class="num">${n}</div>`).join("")}</div>
@@ -131,11 +200,13 @@ export default function SellerDashboard() {
         <div class="token">Token: ${c.token}</div>
       </div>`).join("")}
     </body></html>`;
-    const win = window.open("", "_blank", "width=600,height=800");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      win.onload = () => { win.print(); };
+  }
+
+  function handlePrint(cards: any[], roomName: string, prizeQ?: any, prizeQi?: any, prizeFull?: any) {
+    if (isAndroidPOS()) {
+      printViaNative(cards, roomName, prizeQ, prizeQi, prizeFull);
+    } else {
+      printViaIframe(buildPrintHtml(cards, roomName, prizeQ, prizeQi, prizeFull));
     }
   }
 

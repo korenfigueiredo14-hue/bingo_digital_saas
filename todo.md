@@ -271,3 +271,14 @@
 - [x] Ajustar sorteio para máximo de 60 bolas por rodada
 - [x] Adicionar campo no painel admin para definir qual estabelecimento ganha o acumulado
 - [x] Adicionar campo no painel admin para definir quantas bolas precisam ser sorteadas para ganhar o acumulado
+
+## Fase 29 - Correção APK Impressão Moderninha Smart
+- [ ] Resolver erro "Terminal Service 1.4.0" usando API alternativa sem PlugPagService
+- [ ] Compilar APK v5 com nova abordagem de impressão
+
+## Fase 30 - Correção Botão Imprimir POS (Sem Resposta)
+- [x] Corrigir SellerDashboard: substituir window.open() por impressão via iframe (igual ao SellCards)
+- [x] Adicionar detecção de AndroidPrinter no SellerDashboard (igual ao SellCards)
+- [x] Adicionar feedback visual (toast) quando impressão é disparada no POS
+- [x] Garantir que o botão "Reimprimir" na tela de sucesso também funcione no POS
+- [ ] Recompilar APK v6 com callback JS para retornar resultado da impressão ao React

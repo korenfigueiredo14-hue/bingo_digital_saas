@@ -229,15 +229,15 @@ export function drawNextNumber(alreadyDrawn: number[]): number | null {
 }
 
 /**
- * Retorna o label da coluna para um número (B, I, N, G, O) no range 1-75.
- * B: 1-15 | I: 16-30 | N: 31-45 | G: 46-60 | O: 61-75
+ * Retorna o label da coluna para um número (B, I, N, G, O) no range 1-90.
+ * B: 1-18 | I: 19-36 | N: 37-54 | G: 55-72 | O: 73-90
  */
 export function getColumnLabel(num: number): string {
-  if (num >= 1 && num <= 15) return "B";
-  if (num >= 16 && num <= 30) return "I";
-  if (num >= 31 && num <= 45) return "N";
-  if (num >= 46 && num <= 60) return "G";
-  if (num >= 61 && num <= 75) return "O";
+  if (num >= 1 && num <= 18) return "B";
+  if (num >= 19 && num <= 36) return "I";
+  if (num >= 37 && num <= 54) return "N";
+  if (num >= 55 && num <= 72) return "G";
+  if (num >= 73 && num <= 90) return "O";
   return "";
 }
 
