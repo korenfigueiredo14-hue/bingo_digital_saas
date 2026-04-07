@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState } from "react";
-import { ArrowLeft, Dices, Ticket, Trophy, Clock, Calendar, CheckCircle } from "lucide-react";
+import { ArrowLeft, Dices, Ticket, Trophy, Clock, Calendar, CheckCircle, Sparkles } from "lucide-react";
 
 const CARD_PRICE = 0.50; // R$ 0,50 fixo por cartela
 
@@ -27,6 +27,11 @@ export default function RoomCreate() {
     useSchedule: false,
     scheduledDate: "",
     scheduledTime: "",
+    // Acumulado
+    accumulatedEnabled: false,
+    accumulatedPrize: "",
+    accumulatedEstablishment: "",
+    accumulatedMinBalls: "30",
   });
 
   const createMutation = trpc.rooms.create.useMutation({
@@ -82,6 +87,10 @@ export default function RoomCreate() {
       winCondition: form.winCondition,
       autoDrawEnabled: false,
       scheduledAt,
+      accumulatedEnabled: form.accumulatedEnabled,
+      accumulatedPrize: form.accumulatedEnabled ? (parseFloat(form.accumulatedPrize) || 0) : 0,
+      accumulatedEstablishment: form.accumulatedEnabled ? form.accumulatedEstablishment : undefined,
+      accumulatedMinBalls: form.accumulatedEnabled ? (parseInt(form.accumulatedMinBalls) || 30) : 30,
     });
   };
 
@@ -364,6 +373,115 @@ export default function RoomCreate() {
                   className="bg-input"
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Acumulado */}
+          <Card className="bg-card border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" /> Prêmio Acumulado
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Toggle acumulado */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/50">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Habilitar acumulado</p>
+                  <p className="text-xs text-muted-foreground">
+                    {form.accumulatedEnabled ? "Acumulado ativo neste bingo" : "Sem prêmio acumulado"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, accumulatedEnabled: !form.accumulatedEnabled })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    form.accumulatedEnabled ? "bg-yellow-500" : "bg-muted"
+                  }`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    form.accumulatedEnabled ? "translate-x-6" : "translate-x-0"
+                  }`} />
+                </button>
+              </div>
+
+              {form.accumulatedEnabled && (
+                <div className="space-y-3">
+                  {/* Valor acumulado */}
+                  <div className="flex items-center gap-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                    <div className="w-10 h-10 rounded-lg bg-yellow-500 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label htmlFor="accumulatedPrize" className="text-sm font-semibold text-yellow-400">
+                        Valor do Acumulado (R$)
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-sm">R$</span>
+                        <Input
+                          id="accumulatedPrize"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form.accumulatedPrize}
+                          onChange={(e) => setForm({ ...form, accumulatedPrize: e.target.value })}
+                          className="bg-input h-8 text-sm"
+                          placeholder="0,00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Estabelecimento ganhador */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="accumulatedEstablishment" className="text-sm font-medium">
+                      Estabelecimento que vai receber o acumulado
+                    </Label>
+                    <Input
+                      id="accumulatedEstablishment"
+                      placeholder="Ex: Bar do Tiago"
+                      value={form.accumulatedEstablishment}
+                      onChange={(e) => setForm({ ...form, accumulatedEstablishment: e.target.value })}
+                      className="bg-input"
+                    />
+                    <p className="text-xs text-muted-foreground">Nome do estabelecimento que será exibido na tela de transmissão</p>
+                  </div>
+
+                  {/* Mínimo de bolas */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="accumulatedMinBalls" className="text-sm font-medium">
+                      Mínimo de bolas sorteadas para ganhar o acumulado
+                    </Label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {[20, 25, 30, 35, 40].map((b) => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => setForm({ ...form, accumulatedMinBalls: String(b) })}
+                          className={`rounded-lg py-2 text-sm font-bold border-2 transition-all ${
+                            form.accumulatedMinBalls === String(b)
+                              ? "bg-yellow-500 border-yellow-500 text-white"
+                              : "bg-secondary/50 border-border text-foreground hover:border-yellow-400/50"
+                          }`}
+                        >
+                          {b}
+                        </button>
+                      ))}
+                    </div>
+                    <Input
+                      id="accumulatedMinBalls"
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={form.accumulatedMinBalls}
+                      onChange={(e) => setForm({ ...form, accumulatedMinBalls: e.target.value })}
+                      className="bg-input"
+                      placeholder="30"
+                    />
+                    <p className="text-xs text-muted-foreground">O ganhador só recebe o acumulado se fechar a cartela com até este número de bolas sorteadas</p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

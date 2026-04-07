@@ -153,27 +153,27 @@ export default function SellerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-white flex flex-col">
+    <div className="min-h-screen bg-[#f0f4f8] text-gray-900 flex flex-col">
       {/* Header */}
-      <header className="bg-[#0d1530] border-b border-blue-900/40 px-4 py-3 flex items-center justify-between shrink-0">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
             <Ticket className="w-4 h-4 text-white" />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Bingo Digital</p>
-            <p className="text-xs text-green-400">Vendedor</p>
+            <p className="text-sm font-bold text-gray-900">Bingo Digital</p>
+            <p className="text-xs text-green-600 font-semibold">Vendedor</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm"
-            className="text-blue-300 hover:text-white hover:bg-blue-900/40 text-xs"
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 text-xs"
             onClick={openEstablishment}>
             <Building2 className="w-3.5 h-3.5 mr-1" />
             <span className="hidden sm:inline">{profile?.establishmentName ?? "Meu Estabelecimento"}</span>
           </Button>
           <Button variant="ghost" size="sm"
-            className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
             onClick={() => logout()}>
             <LogOut className="w-4 h-4" />
           </Button>
@@ -181,7 +181,7 @@ export default function SellerDashboard() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-[#0d1530] border-b border-blue-900/40 px-2 shrink-0">
+      <div className="bg-white border-b border-gray-200 px-2 shrink-0">
         <div className="flex">
           {tabs.map((tab) => (
             <button
@@ -189,8 +189,8 @@ export default function SellerDashboard() {
               onClick={() => { setActiveTab(tab.id); if (tab.id === "cartelas") setStep("list"); }}
               className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? "border-blue-500 text-white"
-                  : "border-transparent text-blue-400 hover:text-white"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
               {tab.icon}
@@ -211,8 +211,8 @@ export default function SellerDashboard() {
             {step === "list" && (
               <>
                 <div className="flex items-center justify-between">
-                  <h1 className="text-lg font-bold text-white">Bingos Disponíveis</h1>
-                  <Button variant="ghost" size="sm" onClick={() => refetchRooms()} className="text-blue-400">
+                  <h1 className="text-lg font-bold text-gray-900">Bingos Disponíveis</h1>
+                  <Button variant="ghost" size="sm" onClick={() => refetchRooms()} className="text-blue-600">
                     <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
@@ -224,11 +224,11 @@ export default function SellerDashboard() {
                     ))}
                   </div>
                 ) : !activeRooms.length ? (
-                  <Card className="bg-blue-900/20 border-blue-800/40 text-center py-12">
+                  <Card className="bg-white border-gray-200 text-center py-12 shadow-sm">
                     <CardContent>
-                      <Ticket className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-                      <p className="text-blue-300 text-sm">Nenhum bingo ativo no momento.</p>
-                      <p className="text-blue-500 text-xs mt-1">Aguarde o administrador iniciar um bingo.</p>
+                      <Ticket className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                      <p className="text-gray-600 text-sm">Nenhum bingo ativo no momento.</p>
+                      <p className="text-gray-400 text-xs mt-1">Aguarde o administrador iniciar um bingo.</p>
                     </CardContent>
                   </Card>
                 ) : (
@@ -237,13 +237,13 @@ export default function SellerDashboard() {
                       const statusInfo = STATUS_LABELS[room.status] ?? STATUS_LABELS.open;
                       return (
                         <Card key={room.id}
-                          className="bg-[#0d1530] border-blue-800/40 cursor-pointer hover:border-blue-500/60 transition-all"
+                          className="bg-white border-gray-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all shadow-sm"
                           onClick={() => handleSelectRoom(room)}>
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-3">
                               <div>
-                                <p className="font-bold text-white text-lg">{room.name}</p>
-                                <p className="text-sm text-blue-400 mt-0.5">
+                                <p className="font-bold text-gray-900 text-lg">{room.name}</p>
+                                <p className="text-sm text-blue-600 mt-0.5">
                                   R$ {CARD_PRICE.toFixed(2)} por cartela
                                 </p>
                               </div>
@@ -252,17 +252,17 @@ export default function SellerDashboard() {
                               </Badge>
                             </div>
                             <div className="grid grid-cols-3 gap-2 mb-3">
-                              <div className="bg-blue-900/30 rounded-lg p-2 text-center">
-                                <p className="text-xs text-blue-400">Quadra</p>
-                                <p className="text-sm font-bold text-white">R$ {Number(room.prizeQuadra ?? 0).toFixed(2)}</p>
+                              <div className="bg-blue-50 rounded-lg p-2 text-center">
+                                <p className="text-xs text-blue-500">Quadra</p>
+                                <p className="text-sm font-bold text-blue-700">R$ {Number(room.prizeQuadra ?? 0).toFixed(2)}</p>
                               </div>
-                              <div className="bg-blue-900/30 rounded-lg p-2 text-center">
-                                <p className="text-xs text-blue-400">Quina</p>
-                                <p className="text-sm font-bold text-white">R$ {Number(room.prizeQuina ?? 0).toFixed(2)}</p>
+                              <div className="bg-blue-50 rounded-lg p-2 text-center">
+                                <p className="text-xs text-blue-500">Quina</p>
+                                <p className="text-sm font-bold text-blue-700">R$ {Number(room.prizeQuina ?? 0).toFixed(2)}</p>
                               </div>
-                              <div className="bg-green-900/30 rounded-lg p-2 text-center">
-                                <p className="text-xs text-green-400">Bingo</p>
-                                <p className="text-sm font-bold text-green-300">R$ {Number(room.prizeFullCard ?? 0).toFixed(2)}</p>
+                              <div className="bg-green-50 rounded-lg p-2 text-center">
+                                <p className="text-xs text-green-600">Bingo</p>
+                                <p className="text-sm font-bold text-green-700">R$ {Number(room.prizeFullCard ?? 0).toFixed(2)}</p>
                               </div>
                             </div>
                             <Button size="lg" className="w-full bg-green-600 hover:bg-green-500 text-white font-bold text-base py-4">
@@ -284,27 +284,27 @@ export default function SellerDashboard() {
                 <div className="flex items-center gap-3 px-3 pt-3 pb-2">
                   <button
                     onClick={() => setStep("list")}
-                    className="flex items-center gap-1 text-gray-400 hover:text-white text-sm font-medium transition-colors">
+                    className="flex items-center gap-1 text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors">
                     ← Voltar
                   </button>
                   <div>
-                    <h1 className="text-base font-bold text-white leading-tight">Vender Cartelas</h1>
+                    <h1 className="text-base font-bold text-gray-900 leading-tight">Vender Cartelas</h1>
                     <p className="text-xs text-gray-500">{selectedRoom.name} — R$ {CARD_PRICE.toFixed(2)}/cartela</p>
                   </div>
                 </div>
 
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-2 px-3 pb-3">
-                  <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 text-center">
-                    <p className="text-2xl font-black text-white">{report?.cardCount ?? 0}</p>
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm">
+                    <p className="text-2xl font-black text-gray-900">{report?.cardCount ?? 0}</p>
                     <p className="text-xs text-gray-500 mt-0.5">Vendidas</p>
                   </div>
-                  <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 text-center">
-                    <p className="text-2xl font-black text-green-400">{selectedRoom.maxCards ?? 1000}</p>
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm">
+                    <p className="text-2xl font-black text-green-600">{selectedRoom.maxCards ?? 1000}</p>
                     <p className="text-xs text-gray-500 mt-0.5">Disponíveis</p>
                   </div>
-                  <div className="bg-[#111827] border border-[#1f2937] rounded-xl p-3 text-center">
-                    <p className="text-xl font-black text-yellow-400">R$ {Number(report?.totalSales ?? 0).toFixed(2)}</p>
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm">
+                    <p className="text-xl font-black text-yellow-600">R$ {Number(report?.totalSales ?? 0).toFixed(2)}</p>
                     <p className="text-xs text-gray-500 mt-0.5">Faturado</p>
                   </div>
                 </div>
@@ -312,8 +312,8 @@ export default function SellerDashboard() {
                 {/* Seção de quantidade */}
                 <div className="px-3 pb-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <ShoppingCart className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-300">Quantidade de Cartelas</span>
+                    <ShoppingCart className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-semibold text-gray-700">Quantidade de Cartelas</span>
                   </div>
 
                   {/* Grid 4x3 de botões */}
@@ -324,14 +324,14 @@ export default function SellerDashboard() {
                         onClick={() => setQuantity(q)}
                         className={`rounded-xl py-3 flex flex-col items-center justify-center transition-all border ${
                           quantity === q
-                            ? "bg-[#1d4ed8] border-[#3b82f6] shadow-lg shadow-blue-900/40"
-                            : "bg-[#111827] border-[#1f2937] hover:border-[#374151]"
+                            ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-200"
+                            : "bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50"
                         }`}>
                         <span className={`text-xl font-black leading-tight ${
-                          quantity === q ? "text-white" : "text-white"
+                          quantity === q ? "text-white" : "text-gray-900"
                         }`}>{q}</span>
                         <span className={`text-xs mt-0.5 ${
-                          quantity === q ? "text-blue-200" : "text-gray-500"
+                          quantity === q ? "text-blue-100" : "text-gray-500"
                         }`}>R$ {(CARD_PRICE * q).toFixed(2)}</span>
                       </button>
                     ))}
@@ -342,14 +342,14 @@ export default function SellerDashboard() {
                     <button
                       onClick={() => { setCardPage(Math.max(0, cardPage - 1)); }}
                       disabled={cardPage === 0}
-                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium">
+                      className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium">
                       ‹ Anterior
                     </button>
-                    <span className="text-xs text-gray-500">Pág. {cardPage + 1}/{totalPages}</span>
+                    <span className="text-xs text-gray-400">Pág. {cardPage + 1}/{totalPages}</span>
                     <button
                       onClick={() => { setCardPage(Math.min(totalPages - 1, cardPage + 1)); }}
                       disabled={cardPage === totalPages - 1}
-                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium">
+                      className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-medium">
                       Próxima ›
                     </button>
                   </div>
@@ -358,8 +358,8 @@ export default function SellerDashboard() {
                 {/* Botão confirmar */}
                 <div className="px-3 pb-4 mt-auto">
                   <div className="flex justify-between items-center mb-3 px-1">
-                    <span className="text-sm text-gray-400">Total a cobrar</span>
-                    <span className="text-xl font-black text-green-400">R$ {(CARD_PRICE * quantity).toFixed(2)}</span>
+                    <span className="text-sm text-gray-600 font-medium">Total a cobrar</span>
+                    <span className="text-xl font-black text-green-600">R$ {(CARD_PRICE * quantity).toFixed(2)}</span>
                   </div>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-5 text-lg rounded-xl"
@@ -378,30 +378,30 @@ export default function SellerDashboard() {
             {/* STEP: Sucesso */}
             {step === "success" && (
               <div className="text-center space-y-4 py-6">
-                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
-                  <CheckCircle className="w-10 h-10 text-green-400" />
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-10 h-10 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Venda Realizada!</h2>
-                  <p className="text-blue-300 text-sm mt-1">{generatedCards.length} cartela(s) gerada(s)</p>
+                  <h2 className="text-2xl font-bold text-gray-900">Venda Realizada!</h2>
+                  <p className="text-gray-500 text-sm mt-1">{generatedCards.length} cartela(s) gerada(s)</p>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {generatedCards.slice(0, 6).map((card) => (
-                    <div key={card.id} className="bg-[#0d1530] border border-blue-800/40 rounded-lg p-2">
+                    <div key={card.id} className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
                       <div className="flex flex-wrap gap-1 justify-center">
                         {(card.numbers || []).slice(0, 9).map((n: number) => (
-                          <span key={n} className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center font-bold">{n}</span>
+                          <span key={n} className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold">{n}</span>
                         ))}
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1 border-blue-800/60 text-blue-300"
+                  <Button variant="outline" className="flex-1 border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                     onClick={() => handlePrint(generatedCards, selectedRoom?.name ?? "", selectedRoom?.prizeQuadra, selectedRoom?.prizeQuina, selectedRoom?.prizeFullCard)}>
                     🖨️ Reimprimir
                   </Button>
-                  <Button className="flex-1 bg-blue-600 hover:bg-blue-500 text-white" onClick={handleNewSale}>
+                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={handleNewSale}>
                     Nova Venda
                   </Button>
                 </div>
@@ -414,8 +414,8 @@ export default function SellerDashboard() {
         {activeTab === "rodadas" && (
           <div className="p-3 space-y-3">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-bold text-white">Próximas Rodadas</h1>
-              <Button variant="ghost" size="sm" onClick={() => refetchRooms()} className="text-blue-400">
+              <h1 className="text-lg font-bold text-gray-900">Próximas Rodadas</h1>
+              <Button variant="ghost" size="sm" onClick={() => refetchRooms()} className="text-blue-600">
                 <RefreshCw className="w-4 h-4" />
               </Button>
             </div>
@@ -423,26 +423,26 @@ export default function SellerDashboard() {
             {/* Rodadas ativas */}
             {activeRooms.length > 0 && (
               <div>
-                <p className="text-xs text-green-400 font-semibold uppercase tracking-wider mb-2">Em andamento</p>
+                <p className="text-xs text-green-600 font-semibold uppercase tracking-wider mb-2">Em andamento</p>
                 <div className="space-y-2">
                   {activeRooms.map((room: any) => {
                     const statusInfo = STATUS_LABELS[room.status] ?? STATUS_LABELS.open;
                     return (
-                      <Card key={room.id} className="bg-[#0d1530] border-green-800/30">
+                      <Card key={room.id} className="bg-white border-green-200 shadow-sm">
                         <CardContent className="p-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                                <Ticket className="w-5 h-5 text-green-400" />
+                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <Ticket className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
-                                <p className="font-semibold text-white text-sm">{room.name}</p>
-                                <p className="text-xs text-blue-400">R$ {Number(room.cardPrice).toFixed(2)}/cartela</p>
+                                <p className="font-semibold text-gray-900 text-sm">{room.name}</p>
+                                <p className="text-xs text-blue-600">R$ {Number(room.cardPrice).toFixed(2)}/cartela</p>
                               </div>
                             </div>
                             <div className="text-right">
                               <Badge className={`text-xs border ${statusInfo.color} mb-1`}>{statusInfo.label}</Badge>
-                              <p className="text-xs text-blue-400">
+                              <p className="text-xs text-blue-600">
                                 🏆 R$ {Number(room.prizeFullCard ?? 0).toFixed(2)}
                               </p>
                             </div>
@@ -458,19 +458,19 @@ export default function SellerDashboard() {
             {/* Rodadas agendadas */}
             {scheduledRooms.length > 0 && (
               <div>
-                <p className="text-xs text-blue-400 font-semibold uppercase tracking-wider mb-2 mt-4">Agendadas</p>
+                <p className="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-2 mt-4">Agendadas</p>
                 <div className="space-y-2">
                   {scheduledRooms.map((room: any) => (
-                    <Card key={room.id} className="bg-[#0d1530] border-blue-800/30">
+                    <Card key={room.id} className="bg-white border-blue-200 shadow-sm">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                              <Calendar className="w-5 h-5 text-blue-400" />
+                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <Calendar className="w-5 h-5 text-blue-600" />
                             </div>
                             <div>
-                              <p className="font-semibold text-white text-sm">{room.name}</p>
-                              <p className="text-xs text-blue-400">
+                              <p className="font-semibold text-gray-900 text-sm">{room.name}</p>
+                              <p className="text-xs text-blue-600">
                                 {room.startedAt ? new Date(room.startedAt).toLocaleString("pt-BR") : "Horário a definir"}
                               </p>
                             </div>
@@ -487,11 +487,11 @@ export default function SellerDashboard() {
             )}
 
             {activeRooms.length === 0 && scheduledRooms.length === 0 && (
-              <Card className="bg-blue-900/20 border-blue-800/40 text-center py-12">
+              <Card className="bg-white border-gray-200 text-center py-12 shadow-sm">
                 <CardContent>
-                  <Clock className="w-12 h-12 text-blue-500 mx-auto mb-3" />
-                  <p className="text-blue-300 text-sm">Nenhuma rodada ativa ou agendada.</p>
-                  <p className="text-blue-500 text-xs mt-1">Aguarde o administrador programar um bingo.</p>
+                  <Clock className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                  <p className="text-gray-600 text-sm">Nenhuma rodada ativa ou agendada.</p>
+                  <p className="text-gray-400 text-xs mt-1">Aguarde o administrador programar um bingo.</p>
                 </CardContent>
               </Card>
             )}
@@ -501,18 +501,18 @@ export default function SellerDashboard() {
         {/* ─── ABA PREMIADOS ─── */}
         {activeTab === "premiados" && (
           <div className="p-3 space-y-3">
-            <h1 className="text-lg font-bold text-white">Premiados na Loja</h1>
+            <h1 className="text-lg font-bold text-gray-900">Premiados na Loja</h1>
 
             {reportLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-blue-900/20 animate-pulse" />)}
               </div>
             ) : !report?.winners?.length ? (
-              <Card className="bg-blue-900/20 border-blue-800/40 text-center py-12">
+              <Card className="bg-white border-gray-200 text-center py-12 shadow-sm">
                 <CardContent>
                   <Trophy className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-                  <p className="text-blue-300 text-sm">Nenhum prêmio registrado ainda.</p>
-                  <p className="text-blue-500 text-xs mt-1">Os prêmios ganhos pelos seus clientes aparecerão aqui.</p>
+                  <p className="text-gray-600 text-sm">Nenhum prêmio registrado ainda.</p>
+                  <p className="text-gray-400 text-xs mt-1">Os prêmios ganhos pelos seus clientes aparecerão aqui.</p>
                 </CardContent>
               </Card>
             ) : (
@@ -527,18 +527,18 @@ export default function SellerDashboard() {
                     ? w.room?.prizeQuina
                     : w.room?.prizeQuadra;
                   return (
-                    <Card key={i} className="bg-[#0d1530] border-yellow-800/30">
+                    <Card key={i} className="bg-white border-yellow-200 shadow-sm">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                              <Star className="w-5 h-5 text-yellow-400" />
+                            <div className="w-10 h-10 rounded-full bg-yellow-50 flex items-center justify-center">
+                              <Star className="w-5 h-5 text-yellow-500" />
                             </div>
                             <div>
-                              <p className="font-semibold text-white text-sm">
+                              <p className="font-semibold text-gray-900 text-sm">
                                 {w.card?.playerName ?? "Cliente"}
                               </p>
-                              <p className="text-xs text-blue-400">{w.room?.name ?? "Bingo"}</p>
+                              <p className="text-xs text-blue-600">{w.room?.name ?? "Bingo"}</p>
                               <p className="text-xs text-gray-500">
                                 {w.winner?.confirmedAt ? new Date(w.winner.confirmedAt).toLocaleString("pt-BR") : ""}
                               </p>
@@ -561,7 +561,7 @@ export default function SellerDashboard() {
         {/* ─── ABA RELATÓRIO ─── */}
         {activeTab === "relatorio" && (
           <div className="p-3 space-y-3">
-            <h1 className="text-lg font-bold text-white">Relatório Financeiro</h1>
+            <h1 className="text-lg font-bold text-gray-900">Relatório Financeiro</h1>
 
             {reportLoading ? (
               <div className="space-y-2">
@@ -571,59 +571,59 @@ export default function SellerDashboard() {
               <>
                 {/* Cards de resumo */}
                 <div className="grid grid-cols-2 gap-3">
-                  <Card className="bg-[#0d1530] border-blue-800/40">
+                  <Card className="bg-white border-blue-200 shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <Package className="w-4 h-4 text-blue-400" />
-                        <p className="text-xs text-blue-400">Kit (Cartelas)</p>
+                        <Package className="w-4 h-4 text-blue-600" />
+                        <p className="text-xs text-blue-600">Kit (Cartelas)</p>
                       </div>
-                      <p className="text-xl font-black text-white">{report?.cardCount ?? 0}</p>
-                      <p className="text-xs text-blue-500">cartelas vendidas</p>
+                      <p className="text-xl font-black text-gray-900">{report?.cardCount ?? 0}</p>
+                      <p className="text-xs text-blue-400">cartelas vendidas</p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-[#0d1530] border-green-800/40">
+                  <Card className="bg-white border-green-200 shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="w-4 h-4 text-green-400" />
-                        <p className="text-xs text-green-400">Total Vendas</p>
+                        <DollarSign className="w-4 h-4 text-green-600" />
+                        <p className="text-xs text-green-600">Total Vendas</p>
                       </div>
-                      <p className="text-xl font-black text-green-400">
+                      <p className="text-xl font-black text-green-600">
                         R$ {Number(report?.totalSales ?? 0).toFixed(2)}
                       </p>
-                      <p className="text-xs text-green-600">valor bruto</p>
+                      <p className="text-xs text-green-500">valor bruto</p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-[#0d1530] border-yellow-800/40">
+                  <Card className="bg-white border-yellow-200 shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <TrendingUp className="w-4 h-4 text-yellow-400" />
-                        <p className="text-xs text-yellow-400">Sua Comissão (30%)</p>
+                        <TrendingUp className="w-4 h-4 text-yellow-600" />
+                        <p className="text-xs text-yellow-600">Sua Comissão (30%)</p>
                       </div>
-                      <p className="text-xl font-black text-yellow-400">
+                      <p className="text-xl font-black text-yellow-600">
                         R$ {Number(report?.commission ?? 0).toFixed(2)}
                       </p>
-                      <p className="text-xs text-yellow-600">seu ganho</p>
+                      <p className="text-xs text-yellow-500">seu ganho</p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-[#0d1530] border-red-800/40">
+                  <Card className="bg-white border-red-200 shadow-sm">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <AlertCircle className="w-4 h-4 text-red-400" />
-                        <p className="text-xs text-red-400">Repasse Admin (70%)</p>
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <p className="text-xs text-red-500">Repasse Admin (70%)</p>
                       </div>
-                      <p className="text-xl font-black text-red-400">
+                      <p className="text-xl font-black text-red-500">
                         R$ {Number(report?.netToAdmin ?? 0).toFixed(2)}
                       </p>
-                      <p className="text-xs text-red-600">a repassar</p>
+                      <p className="text-xs text-red-400">a repassar</p>
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Prêmios que saíram */}
                 {(report?.winners?.length ?? 0) > 0 && (
-                  <Card className="bg-[#0d1530] border-yellow-800/30">
+                  <Card className="bg-white border-yellow-200 shadow-sm">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm text-yellow-400 flex items-center gap-2">
+                      <CardTitle className="text-sm text-yellow-600 flex items-center gap-2">
                         <Trophy className="w-4 h-4" /> Prêmios que saíram na loja
                       </CardTitle>
                     </CardHeader>
@@ -634,12 +634,12 @@ export default function SellerDashboard() {
                         const prizeAmount = prizeType === "full_card" ? w.room?.prizeFullCard
                           : prizeType === "quina" ? w.room?.prizeQuina : w.room?.prizeQuadra;
                         return (
-                          <div key={i} className="flex justify-between items-center text-sm border-b border-blue-900/30 pb-2">
+                          <div key={i} className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
                             <div>
-                              <p className="text-white font-medium">{w.card?.playerName ?? "Cliente"}</p>
-                              <p className="text-xs text-blue-400">{w.room?.name} · {prizeLabel}</p>
+                              <p className="text-gray-900 font-medium">{w.card?.playerName ?? "Cliente"}</p>
+                              <p className="text-xs text-blue-500">{w.room?.name} · {prizeLabel}</p>
                             </div>
-                            <p className="text-yellow-400 font-bold">R$ {Number(prizeAmount ?? 0).toFixed(2)}</p>
+                            <p className="text-yellow-600 font-bold">R$ {Number(prizeAmount ?? 0).toFixed(2)}</p>
                           </div>
                         );
                       })}
@@ -648,29 +648,29 @@ export default function SellerDashboard() {
                 )}
 
                 {/* Histórico de vendas */}
-                <Card className="bg-[#0d1530] border-blue-800/40">
+                  <Card className="bg-white border-blue-200 shadow-sm">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm text-blue-400 flex items-center gap-2">
+                    <CardTitle className="text-sm text-blue-600 flex items-center gap-2">
                       <BarChart3 className="w-4 h-4" /> Histórico de Vendas
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {!report?.transactions?.length ? (
-                      <p className="text-blue-500 text-sm text-center py-4">Nenhuma venda registrada ainda.</p>
+                      <p className="text-gray-400 text-sm text-center py-4">Nenhuma venda registrada ainda.</p>
                     ) : (
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {report.transactions
                           .filter((t: any) => t.type === "card_sale")
                           .slice(0, 30)
                           .map((t: any, i: number) => (
-                            <div key={i} className="flex justify-between items-center text-xs border-b border-blue-900/30 pb-1.5">
+                            <div key={i} className="flex justify-between items-center text-xs border-b border-gray-100 pb-1.5">
                               <div>
-                                <p className="text-white">Venda de cartela</p>
-                                <p className="text-blue-500">
+                                <p className="text-gray-900">Venda de cartela</p>
+                                <p className="text-gray-400">
                                   {t.createdAt ? new Date(t.createdAt).toLocaleString("pt-BR") : "—"}
                                 </p>
                               </div>
-                              <p className="text-green-400 font-bold">R$ {Number(t.amount).toFixed(2)}</p>
+                              <p className="text-green-600 font-bold">R$ {Number(t.amount).toFixed(2)}</p>
                             </div>
                           ))}
                       </div>
@@ -685,30 +685,30 @@ export default function SellerDashboard() {
 
       {/* Modal de estabelecimento */}
       <Dialog open={showEstablishment} onOpenChange={setShowEstablishment}>
-        <DialogContent className="bg-[#0d1530] border-blue-800/40 text-white">
+        <DialogContent className="bg-white border-gray-200 text-gray-900">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Store className="w-4 h-4 text-blue-400" /> Meu Estabelecimento
+              <Store className="w-4 h-4 text-blue-600" /> Meu Estabelecimento
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label className="text-blue-300 text-xs">Nome do Estabelecimento</Label>
+              <Label className="text-gray-600 text-xs">Nome do Estabelecimento</Label>
               <Input value={estName} onChange={(e) => setEstName(e.target.value)}
                 placeholder="Ex: Bar do João"
-                className="bg-blue-950/40 border-blue-800/60 text-white mt-1" />
+                className="bg-gray-50 border-gray-300 text-gray-900 mt-1" />
             </div>
             <div>
-              <Label className="text-blue-300 text-xs">Endereço</Label>
+              <Label className="text-gray-600 text-xs">Endereço</Label>
               <Input value={estAddress} onChange={(e) => setEstAddress(e.target.value)}
                 placeholder="Rua, número, bairro"
-                className="bg-blue-950/40 border-blue-800/60 text-white mt-1" />
+                className="bg-gray-50 border-gray-300 text-gray-900 mt-1" />
             </div>
             <div>
-              <Label className="text-blue-300 text-xs">Telefone</Label>
+              <Label className="text-gray-600 text-xs">Telefone</Label>
               <Input value={estPhone} onChange={(e) => setEstPhone(e.target.value)}
                 placeholder="(00) 00000-0000"
-                className="bg-blue-950/40 border-blue-800/60 text-white mt-1" />
+                className="bg-gray-50 border-gray-300 text-gray-900 mt-1" />
             </div>
             <Button className="w-full bg-blue-600 hover:bg-blue-500"
               onClick={() => updateEstablishmentMutation.mutate({

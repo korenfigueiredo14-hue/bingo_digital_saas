@@ -91,6 +91,10 @@ const bingoRoomsRouter = router({
         winCondition: z.enum(["line", "column", "full_card", "any"]).default("any"),
         autoDrawEnabled: z.boolean().default(false),
         scheduledAt: z.string().optional(), // ISO datetime string para agendamento
+        accumulatedEnabled: z.boolean().default(false),
+        accumulatedPrize: z.number().min(0).default(0),
+        accumulatedEstablishment: z.string().optional(),
+        accumulatedMinBalls: z.number().int().min(1).max(60).default(30),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -114,6 +118,10 @@ const bingoRoomsRouter = router({
         publicSlug: slug,
         startedAt: scheduledDate,
         status: scheduledDate ? "draft" : "draft", // sempre draft ao criar
+        accumulatedEnabled: input.accumulatedEnabled,
+        accumulatedPrize: String(input.accumulatedPrize) as any,
+        accumulatedEstablishment: input.accumulatedEstablishment,
+        accumulatedMinBalls: input.accumulatedMinBalls,
       });
       return { id, slug, scheduled: !!scheduledDate };
     }),

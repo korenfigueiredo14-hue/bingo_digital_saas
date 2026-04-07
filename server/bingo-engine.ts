@@ -215,9 +215,13 @@ export function getMarkedNumbers(grid: BingoGrid, drawnNumbers: number[]): numbe
  * Sorteia um número aleatório não sorteado ainda.
  * Retorna null se todos os números já foram sorteados.
  */
+// Máximo de bolas por rodada (média de 60 bolas por rodada)
+export const MAX_BALLS_PER_ROUND = 60;
+
 export function drawNextNumber(alreadyDrawn: number[]): number | null {
-  // Sorteio de 1 a 90 (padrão bingo brasileiro)
-  const all = Array.from({ length: 90 }, (_, i) => i + 1);
+  // Sorteio de 1 a 75 (consistente com as cartelas B-I-N-G-O)
+  if (alreadyDrawn.length >= MAX_BALLS_PER_ROUND) return null;
+  const all = Array.from({ length: 75 }, (_, i) => i + 1);
   const remaining = all.filter((n) => !alreadyDrawn.includes(n));
   if (remaining.length === 0) return null;
   const idx = Math.floor(Math.random() * remaining.length);
@@ -225,15 +229,15 @@ export function drawNextNumber(alreadyDrawn: number[]): number | null {
 }
 
 /**
- * Retorna o label da coluna para um número (B, I, N, G, O) no range 1-90.
- * B: 1-18 | I: 19-36 | N: 37-54 | G: 55-72 | O: 73-90
+ * Retorna o label da coluna para um número (B, I, N, G, O) no range 1-75.
+ * B: 1-15 | I: 16-30 | N: 31-45 | G: 46-60 | O: 61-75
  */
 export function getColumnLabel(num: number): string {
-  if (num >= 1 && num <= 18) return "B";
-  if (num >= 19 && num <= 36) return "I";
-  if (num >= 37 && num <= 54) return "N";
-  if (num >= 55 && num <= 72) return "G";
-  if (num >= 73 && num <= 90) return "O";
+  if (num >= 1 && num <= 15) return "B";
+  if (num >= 16 && num <= 30) return "I";
+  if (num >= 31 && num <= 45) return "N";
+  if (num >= 46 && num <= 60) return "G";
+  if (num >= 61 && num <= 75) return "O";
   return "";
 }
 

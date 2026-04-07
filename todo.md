@@ -265,3 +265,9 @@
 
 ## Fase 27 - Redesign Tela de Venda do Vendedor
 - [x] Redesenhar step "form" do SellerDashboard: stats (Vendidas/Disponíveis/Faturado), grid 4x3 com quantidade+preço, paginação, cores escuras
+
+## Fase 28 - Cores Vendedor + Acumulado Admin + 60 Bolas
+- [x] Clarear cores da área do vendedor (fundo claro, não escuro)
+- [x] Ajustar sorteio para máximo de 60 bolas por rodada
+- [x] Adicionar campo no painel admin para definir qual estabelecimento ganha o acumulado
+- [x] Adicionar campo no painel admin para definir quantas bolas precisam ser sorteadas para ganhar o acumulado

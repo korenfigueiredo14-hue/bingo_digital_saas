@@ -64,6 +64,11 @@ export const bingoRooms = mysqlTable("bingo_rooms", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   startedAt: timestamp("startedAt"),
   finishedAt: timestamp("finishedAt"),
+  // Acumulado
+  accumulatedPrize: decimal("accumulatedPrize", { precision: 10, scale: 2 }).default("0.00"),
+  accumulatedEstablishment: varchar("accumulatedEstablishment", { length: 255 }),
+  accumulatedMinBalls: int("accumulatedMinBalls").default(30), // mínimo de bolas para ganhar o acumulado
+  accumulatedEnabled: boolean("accumulatedEnabled").default(false).notNull(),
 });
 
 export type BingoRoom = typeof bingoRooms.$inferSelect;

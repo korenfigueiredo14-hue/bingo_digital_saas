@@ -352,10 +352,14 @@ export default function BingoShow() {
 
   const drawnSet = useMemo(() => new Set(drawn), [drawn]);
   const recentBalls = useMemo(() => [...drawn].reverse().filter(n => n !== current).slice(0, 9), [drawn, current]);
-  const cardPrice   = Number(room?.cardPrice ?? 0.01);
+  const cardPrice   = Number(room?.cardPrice ?? 0.50);
   const soldCount   = room?.soldCount ?? 0;
   const accumulated = soldCount * cardPrice;
   const roomName    = room?.name ?? "Bingo da Sorte";
+  const accumulatedEnabled = (room as any)?.accumulatedEnabled ?? false;
+  const accumulatedPrize   = Number((room as any)?.accumulatedPrize ?? 0);
+  const accumulatedEstablishment = (room as any)?.accumulatedEstablishment ?? "";
+  const accumulatedMinBalls = Number((room as any)?.accumulatedMinBalls ?? 30);
 
   const quadraWinner = winners.find((w: any) => (w.winner?.winType ?? w.winType) === "quadra");
   const quinaWinner  = winners.find((w: any) => (w.winner?.winType ?? w.winType) === "quina");
@@ -463,7 +467,7 @@ export default function BingoShow() {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {[
             { label: "Cartela",       value: `R$ ${cardPrice.toFixed(2)}`,    border: "#1e90ff44", lc: "#90caf9" },
-            { label: "Acumulado",     value: `R$ ${accumulated.toFixed(2)}`,  border: "#ffa72644", lc: "#ffa726" },
+            ...(accumulatedEnabled ? [{ label: `★ Acumulado${accumulatedEstablishment ? ` (${accumulatedEstablishment})` : ""}`, value: `R$ ${accumulatedPrize.toFixed(2)}`, border: "#ffd70066", lc: "#ffd700" }] : [{ label: "Arrecadado", value: `R$ ${accumulated.toFixed(2)}`, border: "#ffa72644", lc: "#ffa726" }]),
             ...(Number(room?.prizeQuadra) > 0   ? [{ label: "■ Quadra",  value: `R$ ${Number(room?.prizeQuadra).toFixed(2)}`,   border: "#ff980044", lc: "#ff9800" }] : []),
             ...(Number(room?.prizeQuina) > 0    ? [{ label: "■ Quina",   value: `R$ ${Number(room?.prizeQuina).toFixed(2)}`,    border: "#42a5f544", lc: "#42a5f5" }] : []),
             ...(Number(room?.prizeFullCard) > 0 ? [{ label: "■ Bingo",   value: `R$ ${Number(room?.prizeFullCard).toFixed(2)}`, border: "#66bb6a44", lc: "#66bb6a" }] : []),
