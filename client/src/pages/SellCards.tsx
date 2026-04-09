@@ -109,13 +109,38 @@ function buildPrintHtml(
 </html>`;
 }
 
-// Detecta se está rodando no app nativo Android com impressora PagSeguro
+// Detecta se está rodando no app nativo Android (nova interface ou legada)
 function isAndroidPOS(): boolean {
-  return typeof (window as any).AndroidPrinter !== 'undefined';
+  return typeof (window as any).Android !== 'undefined' ||
+         typeof (window as any).AndroidPrinter !== 'undefined';
 }
 
-// Imprime via app nativo Android (PagSeguro Moderninha Smart)
+// Imprime via app nativo Android (Bingo da Sorte App / Moderninha Smart)
 function printViaNative(cards: GeneratedCard[], playerName: string, roomName: string): void {
+  // Nova interface: Android.imprimirCartela() — app BingoDaSorte v1+
+  if (typeof (window as any).Android !== 'undefined') {
+    const android = (window as any).Android;
+    try {
+      toast.info(`Imprimindo ${cards.length} cartela(s)...`);
+      cards.forEach((card, idx) => {
+        const numeros: number[] = card.numbers ?? card.grid.flat().filter((n: number) => n !== 0);
+        const linhas: number[][] = [];
+        for (let i = 0; i < numeros.length; i += 5) linhas.push(numeros.slice(i, i + 5));
+        const dados = {
+          numero: String(idx + 1).padStart(3, '0'),
+          titulo: roomName || 'BINGO DA SORTE',
+          qrcode: card.cardUrl || '',
+          numeros: linhas,
+          jogador: playerName,
+        };
+        setTimeout(() => android.imprimirCartela(JSON.stringify(dados)), idx * 600);
+      });
+    } catch (err) {
+      toast.error('Erro na impressão: ' + String(err));
+    }
+    return;
+  }
+  // Interface legada: AndroidPrinter.printCards() — APK v5/v6
   const printer = (window as any).AndroidPrinter;
   if (!printer) return;
   try {
@@ -127,7 +152,7 @@ function printViaNative(cards: GeneratedCard[], playerName: string, roomName: st
     }));
     printer.printCards(JSON.stringify(cardsData));
   } catch (err) {
-    toast.error("Erro na impressão nativa: " + String(err));
+    toast.error('Erro na impressão nativa: ' + String(err));
   }
 }
 

@@ -97,20 +97,50 @@ export default function SellerDashboard() {
     });
   }
 
-  // Detecta se está rodando no app nativo Android com impressora PagSeguro
+  // Detecta se está rodando no app nativo Android (nova interface ou legada)
   function isAndroidPOS(): boolean {
-    return typeof (window as any).AndroidPrinter !== 'undefined';
+    return typeof (window as any).Android !== 'undefined' ||
+           typeof (window as any).AndroidPrinter !== 'undefined';
   }
 
   // Imprime via impressora nativa do POS Android
   function printViaNative(cards: any[], roomName: string, prizeQ?: any, prizeQi?: any, prizeFull?: any): void {
+    // Nova interface: Android.imprimirCartela() — app BingoDaSorte v1+
+    if (typeof (window as any).Android !== 'undefined') {
+      const android = (window as any).Android;
+      try {
+        toast.info(`Imprimindo ${cards.length} cartela(s)...`);
+        cards.forEach((card: any, idx: number) => {
+          const numeros: number[] = card.numbers ?? [];
+          const linhas: number[][] = [];
+          for (let i = 0; i < numeros.length; i += 5) linhas.push(numeros.slice(i, i + 5));
+          const dados = {
+            numero: String(idx + 1).padStart(3, '0'),
+            titulo: roomName || 'BINGO DA SORTE',
+            qrcode: card.cardUrl || '',
+            numeros: linhas,
+            jogador: profile?.establishmentName ?? 'Cliente',
+            premios: {
+              quadra: `R$${Number(prizeQ ?? 0).toFixed(2)}`,
+              quina: `R$${Number(prizeQi ?? 0).toFixed(2)}`,
+              bingo: `R$${Number(prizeFull ?? 0).toFixed(2)}`,
+            },
+          };
+          setTimeout(() => android.imprimirCartela(JSON.stringify(dados)), idx * 600);
+        });
+      } catch (err) {
+        toast.error('Erro na impressão: ' + String(err));
+      }
+      return;
+    }
+    // Interface legada: AndroidPrinter.printCards() — APK v5/v6
     const printer = (window as any).AndroidPrinter;
     if (!printer) return;
     try {
       const cardsData = cards.map((card: any) => ({
         numbers: card.numbers ?? [],
-        playerName: profile?.establishmentName ?? "Cliente",
-        cardId: (card.token ?? "").slice(0, 8).toUpperCase(),
+        playerName: profile?.establishmentName ?? 'Cliente',
+        cardId: (card.token ?? '').slice(0, 8).toUpperCase(),
         roomName,
         prizes: {
           quadra: `R$${Number(prizeQ ?? 0).toFixed(2)}`,
@@ -119,9 +149,9 @@ export default function SellerDashboard() {
         },
       }));
       printer.printCards(JSON.stringify(cardsData));
-      toast.success("Enviando para impressão...");
+      toast.success('Enviando para impressão...');
     } catch (err) {
-      toast.error("Erro na impressão: " + String(err));
+      toast.error('Erro na impressão: ' + String(err));
     }
   }
 

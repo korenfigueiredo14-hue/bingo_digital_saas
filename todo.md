@@ -281,4 +281,37 @@
 - [x] Adicionar detecção de AndroidPrinter no SellerDashboard (igual ao SellCards)
 - [x] Adicionar feedback visual (toast) quando impressão é disparada no POS
 - [x] Garantir que o botão "Reimprimir" na tela de sucesso também funcione no POS
-- [ ] Recompilar APK v6 com callback JS para retornar resultado da impressão ao React
+- [x] Recompilar APK v6 com callback JS para retornar resultado da impressão ao React
+
+## Fase 31 - Impressão Direta sem PlugPagService (ESC/POS)
+- [x] Investigar acesso direto à impressora via /dev/ttyS* ou USB sem PlugPagService
+- [x] Implementar impressão via TerminalLib.doPrint() (API nova do PagSeguro, sem PlugPagService)
+- [x] Fallback: usar PrintManager nativo do Android como alternativa
+- [x] Compilar APK v7 com TerminalLib.doPrint() sem dependência do PlugPagService
+
+## Fase 32 - Impressão ESC/POS Direto (sem nenhum SDK PagSeguro)
+- [ ] Analisar como TerminalLib faz binding ao serviço (nome do pacote/action do Intent)
+- [ ] Implementar impressão via porta serial /dev/ttyS* com ESC/POS
+- [ ] Fallback: tentar /dev/printer ou /dev/usb/lp0
+- [ ] Compilar APK v8 com impressão 100% independente
+
+## Fase 32 - Impressão via APK de Referência (MSBINGODASORTEPDV)
+- [ ] Extrair e descompilar o APK de referência para analisar o código de impressão
+- [ ] Identificar as classes, dependências e método de impressão usado
+- [ ] Incorporar o código de impressão correto no MainActivity do Bingo Digital
+- [ ] Compilar APK v8 com a impressão funcionando
+
+## Fase 33 - App React Native "Bingo da Sorte"
+- [x] Configurar projeto Android (WebView + JavascriptInterface)
+- [x] Splash screen com logo Bingo da Sorte
+- [x] WebView abrindo o sistema completo (admin + vendedor)
+- [x] JavascriptInterface com Android.imprimir(), Android.imprimirTexto(), Android.imprimirQRCode(), Android.imprimirCartela()
+- [x] Integração com backend via WebView (cookies, localStorage, JS)
+- [x] PrinterHelper.kt com API PAX NeptuneLite via reflexão + QR Code via ZXing
+- [x] Projeto empacotado em ZIP pronto para Android Studio
+
+## Fase 34 - Integração Impressão Nativa no Site
+- [x] Criar hook usePrinter para detectar app nativo e chamar Android.imprimir*
+- [x] Integrar impressão nativa no SellCards (botão imprimir cartela)
+- [x] Integrar impressão nativa no SellerDashboard (botão reimprimir)
+- [x] Escutar eventos impressaoSucesso e impressaoErro para feedback visual (via hook usePrinter)
